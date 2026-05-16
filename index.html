@@ -206,29 +206,47 @@
                 </div>
             </div>
 
-            <!-- Hexagonal Game Board Container -->
-            <div id="board-container" class="relative w-full max-w-[650px] aspect-square flex items-center justify-center">
-                <!-- Background Glow -->
-                <div class="absolute inset-0 bg-primary/5 rounded-full blur-[100px] animate-pulse-slow"></div>
-                
-                <!-- The Board -->
-                <div id="board-wrapper" class="w-full h-full relative p-4 transition-transform duration-700">
-                    <svg id="board-svg" viewBox="0 0 1000 1000" class="w-full h-full drop-shadow-[0_0_50px_rgba(0,0,0,0.5)]"></svg>
-                    <div id="pawns-container" class="absolute inset-0 pointer-events-none"></div>
-                </div>
-                
-                <!-- Center Action Hub -->
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div class="w-40 aspect-square bg-dark/80 backdrop-blur-2xl border-4 border-white/10 rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center pointer-events-auto p-4 z-30 group">
-                        <div id="dice-container" class="relative w-20 h-20 mb-3 preserve-3d transition-transform duration-500 cursor-pointer">
-                            <div class="dice-face absolute inset-0 bg-white rounded-2xl flex items-center justify-center text-dark text-4xl font-black shadow-inner">
-                                <span id="dice-value">?</span>
-                            </div>
+            <!-- Live Market Focus Area -->
+            <div id="market-focus-area" class="relative w-full max-w-[800px] bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-8 shadow-[0_0_100px_rgba(0,0,0,0.8)] z-10 overflow-hidden">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-4xl font-black text-white tracking-tighter">STOCK MARKET</h2>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="w-2 h-2 bg-bull rounded-full animate-pulse"></span>
+                            <span id="session-status" class="text-[10px] font-black text-bull uppercase tracking-[0.3em]">Trading Session Open</span>
                         </div>
-                        <button id="roll-dice-btn" class="w-full bg-primary hover:bg-secondary text-white font-black py-2 rounded-xl text-xs uppercase tracking-tighter transition-all active:scale-95 disabled:opacity-50 disabled:grayscale">
-                            ROLL DICE
-                        </button>
                     </div>
+                    <div class="bg-white/5 px-6 py-3 rounded-2xl border border-white/5 text-right flex items-center gap-6">
+                        <div>
+                            <p class="text-[10px] font-black text-white/40 uppercase tracking-widest">Time Remaining</p>
+                            <p id="timer-display" class="text-2xl font-black text-bear animate-pulse">45s</p>
+                        </div>
+                        <div class="w-px h-10 bg-white/10"></div>
+                        <div>
+                            <p class="text-[10px] font-black text-white/40 uppercase tracking-widest">Active Round</p>
+                            <p id="round-display" class="text-2xl font-black text-primary">1 / 3</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Table -->
+                <div class="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar" id="central-market-list">
+                    <!-- Stocks will be injected here via JS -->
+                    <div class="flex items-center justify-center h-40 text-white/20 font-bold uppercase tracking-widest">
+                        Initializing Market Data...
+                    </div>
+                </div>
+
+                <!-- Footer Action -->
+                <div class="mt-10 flex items-center justify-between gap-6 border-t border-white/5 pt-8">
+                    <div class="flex-1">
+                        <p class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Turn Management</p>
+                        <p id="turn-indicator-text" class="text-sm font-bold text-white/80">Waiting for other players...</p>
+                    </div>
+                    <button id="end-turn-btn" class="flex-[2] bg-primary hover:bg-blue-600 text-white font-black py-5 rounded-2xl shadow-2xl shadow-primary/30 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale text-lg tracking-widest uppercase">
+                        FINISH TRADING
+                    </button>
                 </div>
             </div>
 

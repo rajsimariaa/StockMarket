@@ -185,73 +185,134 @@ function enterGame() {
         () => fetchStocks()).subscribe();
 
     // Re-bind game controls
-    const rollBtn = document.getElementById('roll-dice-btn');
-    const dice = document.getElementById('dice-container');
+    const endTurnBtn = document.getElementById('end-turn-btn');
     const leaveBtn = document.getElementById('leave-game-btn');
 
-    if (rollBtn) rollBtn.onclick = handleDiceRoll;
-    if (dice) dice.onclick = handleDiceRoll;
+    if (endTurnBtn) endTurnBtn.onclick = endTurn;
     if (leaveBtn) leaveBtn.onclick = leaveMatch;
     
-    document.getElementById('mobile-portfolio-btn').onclick = () => ui.game.mobilePortfolioPanel.classList.remove('hidden');
-    document.getElementById('mobile-market-btn').onclick = () => ui.game.mobileMarketPanel.classList.remove('hidden');
-    
-    document.querySelectorAll('.close-modal, .close-mobile-panel').forEach(btn => {
-        btn.onclick = () => {
-            ui.modals.overlay.classList.add('hidden');
-            ui.game.mobileMarketPanel.classList.add('hidden');
-            ui.game.mobilePortfolioPanel.classList.add('hidden');
-        };
-    });
+    // Initial renders
+    fetchStocks();
+    fetchPortfolio();
+    updateTurnUI();
 }
 
-async function handleDiceRoll() {
-    console.log('Dice roll triggered');
+function renderCentralMarket() {
+    const list = document.getElementById('central-market-list');
+    if (!list) return;
     
-    // Emergency Fetch if players are missing
-    if (!gameData.players || gameData.players.length === 0) {
-        console.log('Players missing for room:', gameData.room?.id);
-        // Handshake again just in case
-        await sb.from('profiles').upsert([{ id: gameData.user.id, username: gameData.user.username }], { onConflict: 'id' });
-        await fetchPlayers(gameData.room.id);
+    list.innerHTML = gameData.stocks.map(stock => {
+        const change = stock.last_change || 0;
+        const isUp = change >= 0;
+        
+        return `
+            <div class="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/5 hover:bg-white/10 transition-all group">
+                <div class="flex items-center gap-5">
+                    <div class="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-black text-xl group-hover:scale-110 transition-transform">
+                        ${stock.symbol}
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-black text-white tracking-tight">${stock.name}</h4>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-white/30 uppercase tracking-widest">${stock.volatility} VOLATILITY</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-8">
+                    <div class="text-right">
+                        <p class="text-2xl font-black text-white">${formatCurrency(stock.current_price)}</p>
+                        <p class="text-sm font-bold ${isUp ? 'text-bull' : 'text-bear'}">
+                            ${isUp ? '▲' : '▼'} ${formatCurrency(Math.abs(change))}
+                        </p>
+                    </div>
+                    <button onclick="openTradeModal('${stock.name}')" 
+                        class="bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95">
+                        TRADE
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function endTurn() {
+    const endBtn = document.getElementById('end-turn-btn');
+    if (endBtn) {
+        endBtn.disabled = true;
+        endBtn.innerText = 'WAITING FOR OTHERS...';
     }
 
-    if (!gameData.players || gameData.players.length === 0) {
-        const { data: retryPlayers, error: retryError } = await sb.from('players').select('*').eq('room_id', gameData.room.id);
-        if (retryError) alert(`Database Error (Player Fetch): ${retryError.message}`);
-        if (!retryPlayers || retryPlayers.length === 0) {
-            return showToast(`Room Error: No players found in room ${gameData.room?.room_code}. Try refreshing.`, "error");
+    const isLastPlayer = gameData.room.current_turn_index === (gameData.players.length - 1);
+    
+    if (isLastPlayer) {
+        if (gameData.room.round_number >= 3) {
+            // END OF GAME
+            addLog("Game Complete! Calculating Final Scores...");
+            await endGame();
+            return;
         }
-        gameData.players = retryPlayers;
-    }
 
-    const currentIndex = gameData.room.current_turn_index || 0;
-    const currentPlayer = gameData.players[currentIndex];
-    
-    if (!currentPlayer || currentPlayer.user_id !== gameData.user.id) {
-        return showToast(`Waiting for ${currentPlayer?.profiles?.username || 'other player'}...`, 'error');
+        addLog("Round Complete! Fluctuating Market...");
+        await fluctuateMarket();
+        
+        await sb.from('rooms').update({ 
+            current_turn_index: 0,
+            round_number: (gameData.room.round_number || 1) + 1
+        }).eq('id', gameData.room.id);
+    } else {
+        await nextTurn();
     }
-    
-    const rollBtn = document.getElementById('roll-dice-btn');
-    const dice = document.getElementById('dice-container');
-    const diceVal = document.getElementById('dice-value');
+}
 
-    if (rollBtn) rollBtn.disabled = true;
-    if (dice) dice.classList.add('dice-rolling');
+let turnTimer = null;
+function startTimer() {
+    let timeLeft = 45;
+    const display = document.getElementById('timer-display');
     
-    const roll = Math.floor(Math.random() * 6) + 1;
+    if (turnTimer) clearInterval(turnTimer);
     
-    setTimeout(async () => {
-        if (dice) dice.classList.remove('dice-rolling');
-        if (diceVal) diceVal.innerText = roll;
+    turnTimer = setInterval(() => {
+        timeLeft--;
+        if (display) display.innerText = `${timeLeft}s`;
         
-        const currentPos = gameData.player?.position || 0;
-        const newPosition = (currentPos + roll) % BOARD_TILES.length;
-        const tile = BOARD_TILES[newPosition];
-        
-        await sb.from('players').update({ position: newPosition }).eq('id', gameData.player.id);
-        await processTileAction(tile);
+        if (timeLeft <= 0) {
+            clearInterval(turnTimer);
+            endTurn(); // Bot auto-plays
+        }
     }, 1000);
+}
+
+async function endGame() {
+    const { data: players } = await sb.from('players').select('*, portfolios(quantity, stocks(current_price)), profiles(username)').eq('room_id', gameData.room.id);
+    
+    const leaderboard = players.map(p => {
+        const stockValue = p.portfolios?.reduce((sum, item) => sum + (item.quantity * item.stocks.current_price), 0) || 0;
+        return {
+            username: p.profiles.username,
+            total: p.cash + stockValue
+        };
+    }).sort((a, b) => b.total - a.total);
+
+    await sb.from('rooms').update({ status: 'finished' }).eq('id', gameData.room.id);
+    
+    // Show results
+    alert(`GAME OVER!\nWinner: ${leaderboard[0].username} with ${formatCurrency(leaderboard[0].total)}\n\nRefresh to play again!`);
+    location.reload();
+}
+
+async function fluctuateMarket() {
+    for (const stock of gameData.stocks) {
+        const volatility = stock.volatility === 'HIGH' ? 0.25 : stock.volatility === 'MED' ? 0.15 : 0.08;
+        const changePercent = (Math.random() * volatility * 2) - volatility;
+        const changeAmount = Math.round(stock.current_price * changePercent);
+        const newPrice = Math.max(10, stock.current_price + changeAmount);
+        
+        await sb.from('stocks').update({ 
+            current_price: newPrice,
+            last_change: changeAmount
+        }).eq('id', stock.id);
+    }
 }
 
 async function finishTurn() {
@@ -267,6 +328,13 @@ async function nextTurn() {
     
     const nextIndex = (gameData.room.current_turn_index + 1) % gameData.players.length;
     await sb.from('rooms').update({ current_turn_index: nextIndex }).eq('id', gameData.room.id);
+}
+
+async function fetchStocks() {
+    const { data: stocks, error } = await sb.from('stocks').select('*').eq('room_id', gameData.room.id).order('name');
+    if (error) return console.error('Fetch stocks error:', error);
+    gameData.stocks = stocks;
+    renderCentralMarket();
 }
 
 async function leaveMatch() {
@@ -319,17 +387,28 @@ function updateTurnUI() {
     const currentPlayer = gameData.players[currentIndex];
     const isMyTurn = currentPlayer?.user_id === gameData.user.id;
     
-    const turnDisplay = document.getElementById('current-player-turn');
-    const rollBtn = document.getElementById('roll-dice-btn');
+    const roundDisplay = document.getElementById('round-display');
+    const turnIndicator = document.getElementById('turn-indicator-text');
+    const endBtn = document.getElementById('end-turn-btn');
 
-    if (turnDisplay) {
-        turnDisplay.innerText = isMyTurn ? 'YOUR TURN' : `${currentPlayer?.profiles?.username?.toUpperCase() || 'PLAYER'}'S TURN`;
-        turnDisplay.className = isMyTurn ? 'font-black text-bull uppercase text-sm' : 'font-black text-primary uppercase text-sm';
+    if (roundDisplay) roundDisplay.innerText = `${gameData.room.round_number || 1} / 3`;
+
+    if (isMyTurn) {
+        startTimer();
+    } else {
+        if (turnTimer) clearInterval(turnTimer);
+        const display = document.getElementById('timer-display');
+        if (display) display.innerText = '45s';
     }
 
-    if (rollBtn) {
-        rollBtn.disabled = !isMyTurn;
-        rollBtn.innerText = isMyTurn ? 'ROLL DICE' : 'WAITING...';
+    if (turnIndicator) {
+        turnIndicator.innerText = isMyTurn ? 'IT IS YOUR TURN TO TRADE' : `WAITING FOR ${currentPlayer?.profiles?.username?.toUpperCase() || 'PLAYER'}...`;
+        turnIndicator.className = isMyTurn ? 'text-sm font-bold text-bull animate-pulse' : 'text-sm font-bold text-white/40';
+    }
+
+    if (endBtn) {
+        endBtn.disabled = !isMyTurn;
+        endBtn.innerText = isMyTurn ? 'FINISH TRADING' : 'WAITING...';
     }
 }
 
