@@ -260,10 +260,13 @@ async function finishTurn() {
 }
 
 async function nextTurn() {
-    if (!gameData.players || gameData.players.length === 0) {
+    if (!gameData.players || gameData.players.length <= 1) {
         await fetchPlayers(gameData.room.id);
     }
+    if (gameData.players.length === 0) return;
+    
     const nextIndex = (gameData.room.current_turn_index + 1) % gameData.players.length;
+    await sb.from('rooms').update({ current_turn_index: nextIndex }).eq('id', gameData.room.id);
 }
 
 async function leaveMatch() {
