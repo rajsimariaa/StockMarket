@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Board Game | Educational Trading</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#4f46e5',
+                        accent: '#f59e0b',
+                        dark: '#0f172a',
+                        bull: '#10b981',
+                        bear: '#ef4444',
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark text-white font-sans overflow-hidden">
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-dark p-4">
+        <div class="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float">
+                    <svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                </div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-bull via-primary to-bear bg-clip-text text-transparent">STOCK MARKET</h1>
+                <p class="text-white/60 mt-2 text-sm uppercase tracking-widest font-semibold">Educational Board Game</p>
+            </div>
+            
+            <div id="auth-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-white/40 uppercase mb-2 tracking-wider">Username</label>
+                    <input type="text" id="username" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:bg-white/10 transition-all" placeholder="Enter your name">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-white/40 uppercase mb-2 tracking-wider">Password</label>
+                    <input type="password" id="password" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:bg-white/10 transition-all" placeholder="••••••••">
+                </div>
+                <button id="auth-btn" class="w-full bg-primary hover:bg-secondary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 mt-4">
+                    SIGN IN
+                </button>
+                <p class="text-center text-sm text-white/40 mt-6">
+                    Don't have an account? <a href="#" id="toggle-auth" class="text-primary hover:text-white transition-colors font-semibold">Create Account</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lobby Screen -->
+    <div id="lobby-screen" class="hidden fixed inset-0 z-40 flex flex-col items-center justify-center bg-dark p-4">
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-[100px]"></div>
+            <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-bull/10 rounded-full blur-[100px]"></div>
+        </div>
+
+        <div class="w-full max-w-lg space-y-6 relative">
+            <div class="flex items-center justify-between bg-white/5 p-4 rounded-3xl border border-white/10 backdrop-blur-md">
+                <div class="flex items-center gap-4">
+                    <div id="user-avatar" class="w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center font-bold text-2xl shadow-lg">R</div>
+                    <div>
+                        <p class="text-xs text-white/40 font-bold uppercase tracking-widest">Player Profile</p>
+                        <p id="display-name" class="text-lg font-bold">Raj Simaria</p>
+                    </div>
+                </div>
+                <button id="logout-btn" class="w-12 h-12 bg-white/5 hover:bg-bear/20 hover:text-bear rounded-2xl transition-all flex items-center justify-center border border-white/5">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <button id="create-room-btn" class="relative overflow-hidden group bg-gradient-to-br from-bull/20 to-emerald-900/20 border border-bull/30 hover:border-bull/60 p-8 rounded-[2rem] transition-all flex flex-col items-center text-center">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <div class="w-20 h-20 bg-bull rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-bull/20 group-hover:scale-110 transition-transform">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2">Create New Game</h3>
+                    <p class="text-white/40 max-w-[200px]">Host a virtual room and invite your friends</p>
+                </button>
+
+                <div class="bg-primary/10 border border-primary/20 p-8 rounded-[2rem] backdrop-blur-md">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-bold">Join Game</h3>
+                    </div>
+                    <div class="flex gap-3">
+                        <input type="text" id="room-code-input" class="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-center text-2xl font-mono uppercase tracking-widest focus:outline-none focus:border-primary focus:bg-white/10 transition-all" placeholder="CODE">
+                        <button id="join-room-btn" class="bg-primary hover:bg-secondary px-8 rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-primary/20">JOIN</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waiting Room -->
+    <div id="waiting-screen" class="hidden fixed inset-0 z-30 bg-dark flex flex-col items-center justify-center p-6">
+        <div class="w-full max-w-md bg-white/5 border border-white/10 rounded-[2.5rem] p-10 text-center relative backdrop-blur-xl">
+            <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-dark border-4 border-primary rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.3)] animate-pulse-slow">
+                <span id="player-count" class="text-3xl font-bold text-primary">0</span>
+            </div>
+            
+            <h2 class="text-3xl font-bold mb-2 mt-8 text-white/90">Game Lobby</h2>
+            <div class="flex flex-col items-center gap-3 p-6 bg-white/5 rounded-3xl border border-white/5 mb-8">
+                <span class="text-xs font-bold text-white/40 uppercase tracking-widest">Share this Room Code</span>
+                <div class="flex items-center gap-4">
+                    <span id="current-room-code" class="text-4xl font-mono font-black text-primary tracking-[0.2em]">XXXXXX</span>
+                    <button id="copy-link-btn" class="w-12 h-12 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-all">
+                        <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="player-list" class="grid grid-cols-2 gap-4 mb-10 min-h-[160px]">
+                <!-- Players will appear here -->
+            </div>
+
+            <div class="space-y-4">
+                <button id="start-game-btn" class="hidden w-full bg-bull hover:bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-bull/20 transition-all active:scale-95 disabled:opacity-50 text-xl tracking-wider">
+                    START MATCH
+                </button>
+                <div id="waiting-msg-container" class="flex items-center justify-center gap-3 text-white/40">
+                    <div class="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div class="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                    <p id="waiting-msg" class="text-sm font-semibold uppercase tracking-wider">Waiting for Host</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Board -->
+    <div id="game-screen" class="hidden fixed inset-0 flex flex-col md:flex-row overflow-hidden bg-[#0a0a0c]">
+        <!-- Left Sidebar: Market & Stats (Desktop) -->
+        <div class="hidden md:flex w-80 border-r border-white/5 flex-col p-4 space-y-4 bg-[#0d0d12]">
+            <div class="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/5">
+                <div class="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center text-primary font-bold">BM</div>
+                <h3 class="font-bold">Market Monitor</h3>
+            </div>
+            
+            <div class="flex-1 bg-white/5 rounded-3xl p-4 border border-white/5 overflow-hidden flex flex-col">
+                <div class="flex items-center justify-between mb-4 px-2">
+                    <h3 class="text-[10px] font-black text-white/40 uppercase tracking-widest">Active Stocks</h3>
+                    <div class="flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 bg-bull rounded-full animate-pulse"></span>
+                        <span class="text-[10px] font-bold text-bull">LIVE</span>
+                    </div>
+                </div>
+                <div id="market-list" class="space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+                    <!-- Stocks list -->
+                </div>
+            </div>
+
+            <div class="h-48 bg-white/5 rounded-3xl p-4 border border-white/5 flex flex-col">
+                <h3 class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-3">Live Feed</h3>
+                <div id="game-logs" class="space-y-2 text-[11px] text-white/50 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                    <p><span class="text-primary font-bold">System:</span> Game initialized.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: The Board -->
+        <div class="flex-1 relative flex items-center justify-center p-4 bg-gradient-to-b from-[#111116] to-[#0a0a0c]">
+            <!-- Mobile HUD -->
+            <div class="absolute top-4 left-4 right-4 flex md:hidden items-center justify-between z-20">
+                <div class="bg-white/5 backdrop-blur-xl px-4 py-3 rounded-2xl border border-white/10 flex items-center gap-3 shadow-2xl">
+                    <div class="w-8 h-8 bg-bull/20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-bull" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <span id="mobile-cash" class="font-black text-lg">₹100,000</span>
+                </div>
+                <div class="bg-white/5 backdrop-blur-xl px-4 py-3 rounded-2xl border border-white/10 flex items-center gap-2 shadow-2xl">
+                    <p id="current-player-turn" class="font-black text-primary uppercase text-sm">Your Turn</p>
+                </div>
+            </div>
+
+            <!-- Hexagonal Game Board Container -->
+            <div id="board-container" class="relative w-full max-w-[650px] aspect-square flex items-center justify-center">
+                <!-- Background Glow -->
+                <div class="absolute inset-0 bg-primary/5 rounded-full blur-[100px] animate-pulse-slow"></div>
+                
+                <!-- The Board -->
+                <div id="board-wrapper" class="w-full h-full relative p-4 transition-transform duration-700">
+                    <svg id="board-svg" viewBox="0 0 1000 1000" class="w-full h-full drop-shadow-[0_0_50px_rgba(0,0,0,0.5)]"></svg>
+                    <div id="pawns-container" class="absolute inset-0 pointer-events-none"></div>
+                </div>
+                
+                <!-- Center Action Hub -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="w-40 aspect-square bg-dark/80 backdrop-blur-2xl border-4 border-white/10 rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center pointer-events-auto p-4 z-30 group">
+                        <div id="dice-container" class="relative w-20 h-20 mb-3 preserve-3d transition-transform duration-500 cursor-pointer">
+                            <div class="dice-face absolute inset-0 bg-white rounded-2xl flex items-center justify-center text-dark text-4xl font-black shadow-inner">
+                                <span id="dice-value">?</span>
+                            </div>
+                        </div>
+                        <button id="roll-dice-btn" class="w-full bg-primary hover:bg-secondary text-white font-black py-2 rounded-xl text-xs uppercase tracking-tighter transition-all active:scale-95 disabled:opacity-50 disabled:grayscale">
+                            ROLL DICE
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Bottom Bar -->
+            <div class="absolute bottom-6 left-6 right-6 flex md:hidden gap-3 z-20">
+                <button id="mobile-portfolio-btn" class="flex-1 bg-white/5 backdrop-blur-xl py-4 rounded-2xl border border-white/10 font-black text-xs uppercase tracking-widest shadow-2xl">Portfolio</button>
+                <button id="mobile-market-btn" class="flex-1 bg-white/5 backdrop-blur-xl py-4 rounded-2xl border border-white/10 font-black text-xs uppercase tracking-widest shadow-2xl">Market</button>
+            </div>
+        </div>
+
+        <!-- Right Sidebar: Player Status (Desktop) -->
+        <div class="hidden md:flex w-80 border-l border-white/5 flex-col p-4 space-y-4 bg-[#0d0d12]">
+            <div class="bg-gradient-to-br from-white/10 to-transparent rounded-[2rem] p-6 border border-white/5 text-center shadow-xl relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-2xl"></div>
+                <p class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Total Net Worth</p>
+                <h2 id="net-worth" class="text-4xl font-black text-bull mt-1 tabular-nums">₹100,000</h2>
+                
+                <div class="flex gap-2 mt-6">
+                    <div class="flex-1 bg-black/40 p-3 rounded-2xl border border-white/5">
+                        <p class="text-[9px] font-bold text-white/30 uppercase tracking-tighter">Available Cash</p>
+                        <p id="cash-value" class="text-sm font-black text-white/90">₹100,000</p>
+                    </div>
+                    <div class="flex-1 bg-black/40 p-3 rounded-2xl border border-white/5">
+                        <p class="text-[9px] font-bold text-white/30 uppercase tracking-tighter">Stock Value</p>
+                        <p id="stock-value" class="text-sm font-black text-primary">₹0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-1 bg-white/5 rounded-[2rem] p-5 border border-white/5 flex flex-col overflow-hidden">
+                <h3 class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4">My Portfolio</h3>
+                <div id="portfolio-list" class="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                    <!-- Portfolio items -->
+                    <div class="text-center py-10 opacity-20">
+                        <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                        <p class="text-xs font-bold">No Stocks Owned</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlays -->
+    <div id="modal-overlay" class="hidden fixed inset-0 z-[60] bg-dark/90 backdrop-blur-md flex items-center justify-center p-4">
+        <!-- Stock Trade Modal -->
+        <div id="trade-modal" class="hidden w-full max-w-sm bg-[#16161a] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+            
+            <div class="flex justify-between items-start mb-8 relative z-10">
+                <div>
+                    <h2 id="trade-stock-name" class="text-3xl font-black tracking-tight">INFOSYS</h2>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span id="trade-stock-price" class="text-bull font-black text-xl">₹1,250</span>
+                        <span class="text-[10px] font-bold text-white/30 uppercase">per share</span>
+                    </div>
+                </div>
+                <button class="close-modal w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center transition-all">
+                    <svg class="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-6 relative z-10">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-black/40 p-4 rounded-2xl border border-white/5">
+                        <p class="text-[10px] font-black text-white/30 uppercase mb-1">Your Shares</p>
+                        <p id="trade-user-holding" class="text-lg font-black">0</p>
+                    </div>
+                    <div class="bg-black/40 p-4 rounded-2xl border border-white/5">
+                        <p class="text-[10px] font-black text-white/30 uppercase mb-1">Avg Cost</p>
+                        <p id="trade-user-avg" class="text-lg font-black">₹0</p>
+                    </div>
+                </div>
+
+                <div class="bg-black/20 p-6 rounded-3xl border border-white/5">
+                    <label class="block text-[10px] font-black text-white/40 uppercase tracking-widest text-center mb-4">Select Quantity</label>
+                    <div class="flex items-center justify-between gap-6">
+                        <button id="qty-minus" class="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-2xl font-black transition-all">-</button>
+                        <input type="number" id="trade-qty" class="flex-1 bg-transparent text-center text-4xl font-black focus:outline-none w-20" value="1" min="1">
+                        <button id="qty-plus" class="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-2xl font-black transition-all">+</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between px-2">
+                    <span class="text-xs font-bold text-white/40 uppercase">Total Transaction</span>
+                    <span id="trade-total" class="text-xl font-black text-primary">₹1,250</span>
+                </div>
+
+                <div class="flex gap-4">
+                    <button id="buy-btn" class="flex-1 bg-bull hover:bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-bull/20 transition-all active:scale-95 text-lg uppercase tracking-widest">BUY</button>
+                    <button id="sell-btn" class="flex-1 bg-bear hover:bg-rose-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-bear/20 transition-all active:scale-95 text-lg uppercase tracking-widest">SELL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trend Card Modal -->
+        <div id="card-modal" class="hidden w-full max-w-[280px] bg-gradient-to-br from-primary to-secondary rounded-[3rem] p-1 shadow-[0_0_80px_rgba(99,102,241,0.4)]">
+            <div class="bg-[#0f111a] h-full w-full rounded-[2.8rem] p-8 flex flex-col items-center text-center">
+                <div id="card-icon" class="w-24 h-24 bg-bull/10 rounded-full flex items-center justify-center mb-6 border-2 border-bull/20 shadow-inner">
+                    <svg class="w-12 h-12 text-bull" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                </div>
+                <h2 id="card-title" class="text-3xl font-black mb-4 tracking-tighter">WINDFALL!</h2>
+                <div class="h-24 flex items-center">
+                    <p id="card-description" class="text-white/60 leading-relaxed font-medium">Stock prices of all Tech companies have jumped by 20% due to global demand.</p>
+                </div>
+                <button class="close-modal w-full bg-white text-dark font-black py-5 rounded-3xl mt-8 hover:scale-105 transition-transform shadow-xl">CONTINUE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Overlays (Panels) -->
+    <div id="mobile-market-panel" class="hidden fixed inset-0 z-50 bg-dark flex flex-col pt-16 p-6">
+        <button class="close-mobile-panel absolute top-6 right-6 w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <h2 class="text-3xl font-black mb-6">Market Watch</h2>
+        <div id="mobile-market-list" class="space-y-3 overflow-y-auto flex-1 pb-10"></div>
+    </div>
+
+    <div id="mobile-portfolio-panel" class="hidden fixed inset-0 z-50 bg-dark flex flex-col pt-16 p-6">
+        <button class="close-mobile-panel absolute top-6 right-6 w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <h2 class="text-3xl font-black mb-6">My Assets</h2>
+        <div id="mobile-portfolio-list" class="space-y-3 overflow-y-auto flex-1 pb-10"></div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] px-8 py-4 bg-white text-dark font-bold rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex items-center gap-3 transform translate-y-[-200%] transition-transform duration-500">
+        <div id="toast-icon" class="w-6 h-6 bg-bull rounded-full"></div>
+        <span id="toast-msg">Success! Transaction complete.</span>
+    </div>
+
+    <script src="supabase-client.js"></script>
+    <script src="board-config.js"></script>
+    <script src="game.js"></script>
+    <script src="auth.js"></script>
+</body>
+</html>
