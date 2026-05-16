@@ -168,6 +168,9 @@ function enterGame() {
     ui.screens.waiting.classList.add('hidden');
     ui.screens.game.classList.remove('hidden');
     
+    // Mandatorily sync players before starting
+    fetchPlayers(gameData.room.id);
+    
     renderBoard();
     fetchStocks();
     fetchPortfolio();
@@ -202,14 +205,14 @@ async function handleDiceRoll() {
     
     // Emergency Fetch if players are missing
     if (!gameData.players || gameData.players.length === 0) {
-        console.log('Players missing, attempting emergency fetch...');
+        console.log('Players missing for room:', gameData.room?.id);
         // Handshake again just in case
         await sb.from('profiles').upsert([{ id: gameData.user.id, username: gameData.user.username }], { onConflict: 'id' });
         await fetchPlayers(gameData.room.id);
     }
 
     if (!gameData.players || gameData.players.length === 0) {
-        return showToast("Players not found. Try refreshing.", "error");
+        return showToast(`Room Error: No players found in room ${gameData.room?.room_code}. Try refreshing.`, "error");
     }
 
     const currentIndex = gameData.room.current_turn_index || 0;
