@@ -80,6 +80,11 @@ async function setupRoom(room, isHost) {
         color: '#' + Math.floor(Math.random()*16777215).toString(16)
     }], { onConflict: 'room_id,user_id' });
 
+    if (upsertError) {
+        console.error('Player Upsert Error:', upsertError);
+        alert(`Database Error (Player Join): ${upsertError.message}\nDetail: ${upsertError.details || 'None'}`);
+    }
+
     subscribeToRoom(room.id);
     await fetchPlayers(room.id);
     
@@ -212,7 +217,12 @@ async function handleDiceRoll() {
     }
 
     if (!gameData.players || gameData.players.length === 0) {
-        return showToast(`Room Error: No players found in room ${gameData.room?.room_code}. Try refreshing.`, "error");
+        const { data: retryPlayers, error: retryError } = await sb.from('players').select('*').eq('room_id', gameData.room.id);
+        if (retryError) alert(`Database Error (Player Fetch): ${retryError.message}`);
+        if (!retryPlayers || retryPlayers.length === 0) {
+            return showToast(`Room Error: No players found in room ${gameData.room?.room_code}. Try refreshing.`, "error");
+        }
+        gameData.players = retryPlayers;
     }
 
     const currentIndex = gameData.room.current_turn_index || 0;
