@@ -67,21 +67,39 @@ async function setupRoom(room, isHost) {
         }
     }
 
+    // Ensure profile exists (Handshake)
+    await sb.from('profiles').upsert([{ id: gameData.user.id, username: gameData.user.username }], { onConflict: 'id' });
+
     // Ensure player record exists
-    await sb.from('players').upsert([{ 
+    const { error: upsertError } = await sb.from('players').upsert([{ 
         room_id: room.id, 
         user_id: gameData.user.id, 
         is_ready: true,
         cash: 100000,
         position: 0,
         color: '#' + Math.floor(Math.random()*16777215).toString(16)
-    }]);
+    }], { onConflict: 'room_id,user_id' });
 
     subscribeToRoom(room.id);
     await fetchPlayers(room.id);
     
     if (room.status === 'playing') {
         enterGame();
+    }
+    
+    const leaveRoomBtn = document.getElementById('leave-room-btn');
+    if (leaveRoomBtn) {
+        leaveRoomBtn.onclick = async () => {
+            if (!confirm('Leave this room?')) return;
+            leaveRoomBtn.innerText = 'LEAVING...';
+            leaveRoomBtn.disabled = true;
+            try {
+                if (gameData.player) await sb.from('players').delete().eq('id', gameData.player.id);
+            } catch (e) {
+                console.error('Exit error:', e);
+            }
+            location.reload(); // Always go home
+        };
     }
     
     const copyBtn = document.getElementById('copy-link-btn');
@@ -161,8 +179,11 @@ function enterGame() {
     // Re-bind game controls
     const rollBtn = document.getElementById('roll-dice-btn');
     const dice = document.getElementById('dice-container');
+    const leaveBtn = document.getElementById('leave-game-btn');
+
     if (rollBtn) rollBtn.onclick = handleDiceRoll;
     if (dice) dice.onclick = handleDiceRoll;
+    if (leaveBtn) leaveBtn.onclick = leaveMatch;
     
     document.getElementById('mobile-portfolio-btn').onclick = () => ui.game.mobilePortfolioPanel.classList.remove('hidden');
     document.getElementById('mobile-market-btn').onclick = () => ui.game.mobileMarketPanel.classList.remove('hidden');
@@ -179,8 +200,16 @@ function enterGame() {
 async function handleDiceRoll() {
     console.log('Dice roll triggered');
     
+    // Emergency Fetch if players are missing
     if (!gameData.players || gameData.players.length === 0) {
-        return showToast("Players not loaded yet...", "error");
+        console.log('Players missing, attempting emergency fetch...');
+        // Handshake again just in case
+        await sb.from('profiles').upsert([{ id: gameData.user.id, username: gameData.user.username }], { onConflict: 'id' });
+        await fetchPlayers(gameData.room.id);
+    }
+
+    if (!gameData.players || gameData.players.length === 0) {
+        return showToast("Players not found. Try refreshing.", "error");
     }
 
     const currentIndex = gameData.room.current_turn_index || 0;
@@ -211,6 +240,43 @@ async function handleDiceRoll() {
         processTileAction(tile);
         nextTurn();
     }, 1000);
+}
+
+async function leaveMatch() {
+    if (!gameData.player || !confirm('Are you sure you want to leave? Your wealth will be distributed to other players!')) return;
+
+    const leaveBtn = document.getElementById('leave-game-btn');
+    if (leaveBtn) {
+        leaveBtn.innerText = 'LEAVING...';
+        leaveBtn.disabled = true;
+    }
+
+    try {
+        const stockValue = gameData.portfolio?.reduce((sum, p) => sum + (p.quantity * p.stocks.current_price), 0) || 0;
+        const totalWealth = gameData.player.cash + stockValue;
+        const remainingPlayers = gameData.players?.filter(p => p.id !== gameData.player.id) || [];
+
+        if (remainingPlayers.length > 0) {
+            const inheritance = Math.floor(totalWealth / remainingPlayers.length);
+            for (const p of remainingPlayers) {
+                await sb.from('players').update({ cash: p.cash + inheritance }).eq('id', p.id);
+            }
+            
+            if (gameData.isHost) {
+                await sb.from('rooms').update({ host_id: remainingPlayers[0].user_id }).eq('id', gameData.room.id);
+            }
+            
+            addLog(`${gameData.user.username} left. Each player got ${formatCurrency(inheritance)}!`);
+        } else if (gameData.room) {
+            await sb.from('rooms').delete().eq('id', gameData.room.id);
+        }
+
+        await sb.from('players').delete().eq('id', gameData.player.id);
+    } catch (e) {
+        console.error('Leave match error:', e);
+    }
+    
+    location.reload(); // Always go home
 }
 
 async function nextTurn() {
