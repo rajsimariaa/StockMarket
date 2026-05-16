@@ -39,11 +39,24 @@
             }
         }
     </script>
+    <style>
+        /* Mobile Responsiveness */
+        @media screen and (max-width: 768px) {
+            .modal-content {
+                padding: 24px !important;
+                max-width: 95vw !important;
+                border-radius: 32px !important;
+            }
+            .text-4xl { font-size: 32px !important; }
+            .text-3xl { font-size: 24px !important; }
+            .text-2xl { font-size: 20px !important; }
+        }
+    </style>
 </head>
 <body class="bg-dark text-white font-sans overflow-hidden">
     <!-- Auth Screen -->
     <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-dark p-4">
-        <div class="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+        <div class="modal-content w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
             <div class="text-center mb-8">
                 <div class="w-20 h-20 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float">
                     <svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
@@ -55,7 +68,7 @@
             <div id="auth-form" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-white/40 uppercase mb-2 tracking-wider">Username</label>
-                    <input type="text" id="username" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:bg-white/10 transition-all" placeholder="Enter your name">
+                    <input type="text" id="username" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:bg-white/10 transition-all" placeholder="Enter your name" />
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-white/40 uppercase mb-2 tracking-wider">Password</label>
@@ -299,7 +312,7 @@
     <div id="modal-overlay" class="hidden fixed inset-0 z-[60] bg-dark/95 backdrop-blur-xl flex items-center justify-center p-4">
         
         <!-- 1. Stock Trade Modal -->
-        <div id="trade-modal" class="hidden w-full max-w-sm bg-[#16161a] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
+        <div id="trade-modal" class="hidden w-full max-w-sm bg-[#16161a] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden modal-content modal-scroll">
             <div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
             <div class="flex justify-between items-start mb-8 relative z-10">
                 <div>
@@ -328,7 +341,7 @@
                     <label class="block text-[10px] font-black text-white/40 uppercase tracking-widest text-center mb-4">Select Quantity</label>
                     <div class="flex items-center justify-between gap-6">
                         <button id="qty-minus" class="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-2xl font-black">-</button>
-                        <input type="number" id="trade-qty" class="flex-1 bg-transparent text-center text-4xl font-black focus:outline-none w-20" value="1">
+                        <input type="number" id="trade-qty" class="flex-1 bg-transparent text-center text-4xl font-black focus:outline-none w-20" value="1" />
                         <button id="qty-plus" class="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-2xl font-black">+</button>
                     </div>
                 </div>
@@ -356,7 +369,7 @@
         </div>
 
         <!-- 3. Final Leaderboard Modal -->
-        <div id="leaderboard-modal" class="hidden w-full max-w-md bg-[#0d0d12] border border-white/10 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
+        <div id="leaderboard-modal" class="hidden w-full max-w-md bg-[#0d0d12] border border-white/10 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden modal-content modal-scroll">
             <div class="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent"></div>
             <div class="relative z-10 text-center">
                 <div class="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-primary">

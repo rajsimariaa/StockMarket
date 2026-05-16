@@ -121,6 +121,7 @@ function subscribeToRoom(roomId) {
         payload => {
             gameData.room = payload.new;
             if (payload.new.status === 'playing' && ui.screens.game.classList.contains('hidden')) enterGame();
+            if (payload.new.status === 'finished') endGame();
             updateTurnUI();
         }).subscribe();
 
@@ -559,7 +560,10 @@ async function executeTrade(stock, quantity, type) {
         }
         showToast(`Bought ${quantity} shares of ${stock.symbol}`);
     } else {
-        // SHORT SELLING: No check for enough shares!
+        // MARGIN CHECK: Can't short more than Net Worth
+        const currentNetWorth = (gameData.player.cash || 0) + (gameData.portfolio?.reduce((sum, p) => sum + (p.quantity * p.stocks.current_price), 0) || 0);
+        if (cost > currentNetWorth) return showToast('Margin Limit! Cannot short more than Net Worth.', 'error');
+
         await updateCash(cost);
         const existing = gameData.portfolio?.find(p => p.stock_id === stock.id);
         
@@ -570,7 +574,7 @@ async function executeTrade(stock, quantity, type) {
             // Start a short position
             await sb.from('portfolios').insert([{ player_id: gameData.player.id, stock_id: stock.id, quantity: -quantity, average_buy_price: stock.current_price }]);
         }
-        showToast(`Sold ${quantity} shares of ${stock.symbol} (Short Position Created)`);
+        showToast(`Sold ${quantity} shares of ${stock.symbol} (Short Position)`);
     }
     
     await fetchPortfolio();
