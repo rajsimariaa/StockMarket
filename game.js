@@ -75,9 +75,7 @@ async function setupRoom(room, isHost) {
         room_id: room.id, 
         user_id: gameData.user.id, 
         is_ready: true,
-        cash: 100000,
-        position: 0,
-        color: '#' + Math.floor(Math.random()*16777215).toString(16)
+        cash: 100000
     }], { onConflict: 'room_id,user_id' });
 
     if (upsertError) {
@@ -154,8 +152,8 @@ function renderPlayerList() {
     if (list) {
         list.innerHTML = gameData.players.map(p => `
             <div class="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold" style="background: ${p.color || '#3b82f6'}">${p.profiles?.username?.[0] || 'P'}</div>
-                <div class="text-left"><p class="font-bold">${p.profiles?.username || 'Player'}</p><p class="text-[10px] text-white/40 uppercase">Ready</p></div>
+                <div class="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center font-bold text-primary">${p.profiles?.username?.[0] || 'P'}</div>
+                <div class="text-left"><p class="font-bold">${p.profiles?.username || 'Player'}</p><p class="text-[10px] text-white/40 uppercase">Trader</p></div>
             </div>
         `).join('');
     }
@@ -164,9 +162,27 @@ function renderPlayerList() {
 }
 
 async function startGame() {
-    const stocksToCreate = COMPANIES.map(c => ({ room_id: gameData.room.id, name: c.name, symbol: c.symbol, current_price: c.basePrice, base_price: c.basePrice, color: c.color }));
-    await sb.from('stocks').insert(stocksToCreate);
-    await sb.from('rooms').update({ status: 'playing', current_turn_index: 0 }).eq('id', gameData.room.id);
+    if (!gameData.isHost) return;
+    
+    // Create stocks for the round-based market
+    const stocksToCreate = COMPANIES.map(c => ({
+        room_id: gameData.room.id,
+        name: c.name,
+        symbol: c.symbol,
+        base_price: c.basePrice,
+        current_price: c.basePrice,
+        volatility: c.volatility || 'MED',
+        last_change: 0
+    }));
+
+    const { error: stockError } = await sb.from('stocks').insert(stocksToCreate);
+    if (stockError) return alert('Market Initialization Failed: ' + stockError.message);
+
+    await sb.from('rooms').update({ 
+        status: 'playing', 
+        current_turn_index: 0,
+        round_number: 1 
+    }).eq('id', gameData.room.id);
 }
 
 function enterGame() {
@@ -284,21 +300,52 @@ function startTimer() {
 }
 
 async function endGame() {
+    // 1. Fetch all players and their portfolios
     const { data: players } = await sb.from('players').select('*, portfolios(quantity, stocks(current_price)), profiles(username)').eq('room_id', gameData.room.id);
     
+    // 2. Calculate final net worth
     const leaderboard = players.map(p => {
         const stockValue = p.portfolios?.reduce((sum, item) => sum + (item.quantity * item.stocks.current_price), 0) || 0;
         return {
-            username: p.profiles.username,
+            username: p.profiles?.username || 'Trader',
             total: p.cash + stockValue
         };
     }).sort((a, b) => b.total - a.total);
 
+    // 3. Mark room as finished
     await sb.from('rooms').update({ status: 'finished' }).eq('id', gameData.room.id);
     
-    // Show results
-    alert(`GAME OVER!\nWinner: ${leaderboard[0].username} with ${formatCurrency(leaderboard[0].total)}\n\nRefresh to play again!`);
-    location.reload();
+    // 4. Render Leaderboard UI
+    const list = document.getElementById('leaderboard-list');
+    if (list) {
+        list.innerHTML = leaderboard.map((p, index) => {
+            const rank = index + 1;
+            const isTop3 = rank <= 3;
+            const icon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+            const color = rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-400' : rank === 3 ? 'text-orange-400' : 'text-white/40';
+            
+            return `
+                <div class="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 ${rank === 1 ? 'border-yellow-500/30' : ''}">
+                    <div class="flex items-center gap-4">
+                        <span class="text-2xl ${color} font-black w-8 text-center">${icon}</span>
+                        <div>
+                            <p class="font-black text-white">${p.username.toUpperCase()}</p>
+                            <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold">Total Wealth</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xl font-black ${rank === 1 ? 'text-bull' : 'text-white'}">${formatCurrency(p.total)}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // 5. Show the modal and hide everything else
+    ui.modals.overlay.classList.remove('hidden');
+    document.getElementById('leaderboard-modal').classList.remove('hidden');
+    ui.modals.trade.classList.add('hidden');
+    ui.modals.card.classList.add('hidden');
 }
 
 async function fluctuateMarket() {
@@ -331,8 +378,22 @@ async function nextTurn() {
 }
 
 async function fetchStocks() {
+    if (!gameData.room) return;
     const { data: stocks, error } = await sb.from('stocks').select('*').eq('room_id', gameData.room.id).order('name');
-    if (error) return console.error('Fetch stocks error:', error);
+    
+    if (error) {
+        console.error('Fetch stocks error:', error);
+        return;
+    }
+    
+    if (!stocks || stocks.length === 0) {
+        // If stocks missing but game is playing, host should re-create
+        if (gameData.isHost && gameData.room.status === 'playing') {
+            await startGame();
+        }
+        return;
+    }
+
     gameData.stocks = stocks;
     renderCentralMarket();
 }
@@ -439,25 +500,49 @@ function openTradeModal(companyName) {
     const stock = gameData.stocks.find(s => s.name === companyName);
     if (!stock) return;
 
-    const owned = gameData.portfolio?.find(p => p.stock_id === stock.id)?.quantity || 0;
+    const owned = gameData.portfolio?.find(p => p.stock_id === stock.id);
+    const ownedQty = owned?.quantity || 0;
+    const avgPrice = owned?.average_buy_price || 0;
     
-    document.getElementById('modal-stock-name').innerText = stock.name;
-    document.getElementById('modal-stock-price').innerText = formatCurrency(stock.current_price);
-    document.getElementById('modal-stock-owned').innerText = `${owned} Shares Owned`;
+    // Set Modal Data
+    document.getElementById('trade-stock-name').innerText = stock.symbol;
+    document.getElementById('trade-stock-price').innerText = formatCurrency(stock.current_price);
+    document.getElementById('trade-user-holding').innerText = ownedQty;
+    document.getElementById('trade-user-avg').innerText = formatCurrency(avgPrice);
     
-    const buyBtn = document.getElementById('buy-stock-btn');
-    const sellBtn = document.getElementById('sell-stock-btn');
+    const qtyInput = document.getElementById('trade-qty');
+    const totalEl = document.getElementById('trade-total');
     
-    buyBtn.onclick = () => executeTrade(stock, 10, 'buy');
-    sellBtn.onclick = () => executeTrade(stock, 10, 'sell');
-    sellBtn.disabled = owned < 10;
+    qtyInput.value = 1;
+    totalEl.innerText = formatCurrency(stock.current_price);
+
+    // Live update total
+    qtyInput.oninput = () => {
+        const qty = parseInt(qtyInput.value) || 0;
+        totalEl.innerText = formatCurrency(qty * stock.current_price);
+    };
+
+    // Plus/Minus Buttons
+    document.getElementById('qty-plus').onclick = () => {
+        qtyInput.value = (parseInt(qtyInput.value) || 0) + 1;
+        qtyInput.oninput();
+    };
+    document.getElementById('qty-minus').onclick = () => {
+        qtyInput.value = Math.max(1, (parseInt(qtyInput.value) || 0) - 1);
+        qtyInput.oninput();
+    };
+
+    // Trade Buttons
+    document.getElementById('buy-btn').onclick = () => executeTrade(stock, parseInt(qtyInput.value), 'buy');
+    document.getElementById('sell-btn').onclick = () => executeTrade(stock, parseInt(qtyInput.value), 'sell');
 
     ui.modals.overlay.classList.remove('hidden');
     ui.modals.trade.classList.remove('hidden');
-    ui.modals.card.classList.add('hidden');
 }
 
 async function executeTrade(stock, quantity, type) {
+    if (!quantity || quantity <= 0) return showToast('Enter valid quantity', 'error');
+    
     const cost = stock.current_price * quantity;
     
     if (type === 'buy') {
@@ -466,29 +551,30 @@ async function executeTrade(stock, quantity, type) {
         
         const existing = gameData.portfolio?.find(p => p.stock_id === stock.id);
         if (existing) {
-            const newQty = existing.quantity + quantity;
-            const newAvg = ((existing.quantity * existing.average_buy_price) + cost) / newQty;
+            const newQty = (existing.quantity || 0) + quantity;
+            const newAvg = (((existing.quantity || 0) * (existing.average_buy_price || 0)) + cost) / (newQty || 1);
             await sb.from('portfolios').update({ quantity: newQty, average_buy_price: Math.round(newAvg) }).eq('id', existing.id);
         } else {
             await sb.from('portfolios').insert([{ player_id: gameData.player.id, stock_id: stock.id, quantity, average_buy_price: stock.current_price }]);
         }
         showToast(`Bought ${quantity} shares of ${stock.symbol}`);
     } else {
-        const existing = gameData.portfolio?.find(p => p.stock_id === stock.id);
-        if (!existing || existing.quantity < quantity) return showToast('Not enough shares!', 'error');
-        
+        // SHORT SELLING: No check for enough shares!
         await updateCash(cost);
-        const newQty = existing.quantity - quantity;
-        if (newQty === 0) {
-            await sb.from('portfolios').delete().eq('id', existing.id);
-        } else {
+        const existing = gameData.portfolio?.find(p => p.stock_id === stock.id);
+        
+        if (existing) {
+            const newQty = (existing.quantity || 0) - quantity;
             await sb.from('portfolios').update({ quantity: newQty }).eq('id', existing.id);
+        } else {
+            // Start a short position
+            await sb.from('portfolios').insert([{ player_id: gameData.player.id, stock_id: stock.id, quantity: -quantity, average_buy_price: stock.current_price }]);
         }
-        showToast(`Sold ${quantity} shares of ${stock.symbol}`);
+        showToast(`Sold ${quantity} shares of ${stock.symbol} (Short Position Created)`);
     }
     
     await fetchPortfolio();
-    await finishTurn();
+    ui.modals.overlay.classList.add('hidden'); // Close after trade
 }
 
 function showCardModal(card) {
@@ -521,22 +607,23 @@ async function fetchPortfolio() {
 }
 
 function renderMarket() {
-    const html = gameData.stocks.map(s => `
+    // Synchronize both sidebar and central lists
+    renderCentralMarket();
+    
+    const sidebarHtml = gameData.stocks.map(s => `
         <div class="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center justify-between hover:bg-white/10 transition-all cursor-pointer" onclick="openTradeModal('${s.name}')">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold" style="background: ${s.color}20; color: ${s.color}">${s.symbol[0]}</div>
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold bg-primary/10 text-primary">${s.symbol[0]}</div>
                 <div><p class="text-sm font-bold">${s.name}</p><p class="text-[10px] text-white/30">${s.symbol}</p></div>
             </div>
             <div class="text-right">
                 <p class="text-sm font-black">${formatCurrency(s.current_price)}</p>
-                <p class="text-[10px] ${s.current_price >= s.base_price ? 'text-bull' : 'text-bear'}">${s.current_price >= s.base_price ? '▲' : '▼'} ${Math.abs(((s.current_price - s.base_price)/s.base_price)*100).toFixed(1)}%</p>
             </div>
         </div>
     `).join('');
+    
     const list = document.getElementById('market-list');
-    const mobileList = document.getElementById('mobile-market-list');
-    if (list) list.innerHTML = html;
-    if (mobileList) mobileList.innerHTML = html;
+    if (list) list.innerHTML = sidebarHtml;
 }
 
 function renderPortfolio() {
