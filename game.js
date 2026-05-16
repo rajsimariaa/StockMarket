@@ -250,9 +250,20 @@ async function handleDiceRoll() {
         const tile = BOARD_TILES[newPosition];
         
         await sb.from('players').update({ position: newPosition }).eq('id', gameData.player.id);
-        processTileAction(tile);
-        nextTurn();
+        await processTileAction(tile);
     }, 1000);
+}
+
+async function finishTurn() {
+    ui.modals.overlay.classList.add('hidden');
+    await nextTurn();
+}
+
+async function nextTurn() {
+    if (!gameData.players || gameData.players.length === 0) {
+        await fetchPlayers(gameData.room.id);
+    }
+    const nextIndex = (gameData.room.current_turn_index + 1) % gameData.players.length;
 }
 
 async function leaveMatch() {
@@ -324,22 +335,13 @@ async function processTileAction(tile) {
     
     if (tile.type === BOARD_TILE_TYPES.BUY_SELL) {
         openTradeModal(tile.company);
-    } else if (tile.type === BOARD_TILE_TYPES.BROKER) {
-        showToast('Land on any stock to trade!');
-        ui.game.mobileMarketPanel.classList.remove('hidden'); // Show market for broker
     } else if (tile.type === BOARD_TILE_TYPES.MARKET_TREND || tile.type === BOARD_TILE_TYPES.WINDFALL) {
         const card = TREND_CARDS[Math.floor(Math.random() * TREND_CARDS.length)];
         showCardModal(card);
         if (gameData.isHost) applyTrend(card);
-    } else if (tile.type === BOARD_TILE_TYPES.DIVIDEND) {
-        await updateCash(5000);
-        showToast('Received ₹5,000 Dividend!');
-    } else if (tile.type === BOARD_TILE_TYPES.TAX) {
-        await updateCash(-10000);
-        showToast('Paid ₹10,000 Income Tax', 'error');
-    } else if (tile.type === BOARD_TILE_TYPES.FRAUD) {
-        await updateCash(-20000);
-        showToast('Stock Fraud! Lost ₹20,000', 'error');
+    } else {
+        // For non-modal tiles (Tax, Dividend, etc), pass turn after a small delay
+        setTimeout(nextTurn, 2000);
     }
 }
 
@@ -404,7 +406,19 @@ async function executeTrade(stock, quantity, type) {
     }
     
     await fetchPortfolio();
-    ui.modals.overlay.classList.add('hidden');
+    await finishTurn();
+}
+
+function showCardModal(card) {
+    document.getElementById('modal-card-title').innerText = card.title;
+    document.getElementById('modal-card-desc').innerText = card.description;
+    
+    const okBtn = document.getElementById('modal-card-ok');
+    okBtn.onclick = finishTurn;
+
+    ui.modals.overlay.classList.remove('hidden');
+    ui.modals.card.classList.remove('hidden');
+    ui.modals.trade.classList.add('hidden');
 }
 
 // ... Rest of the functions remain the same but use direct DOM selection for stability ...
