@@ -306,26 +306,105 @@ function updateTurnUI() {
     const isMyTurn = currentPlayer?.user_id === gameData.user.id;
     
     const turnDisplay = document.getElementById('current-player-turn');
+    const rollBtn = document.getElementById('roll-dice-btn');
+
     if (turnDisplay) {
         turnDisplay.innerText = isMyTurn ? 'YOUR TURN' : `${currentPlayer?.profiles?.username?.toUpperCase() || 'PLAYER'}'S TURN`;
         turnDisplay.className = isMyTurn ? 'font-black text-bull uppercase text-sm' : 'font-black text-primary uppercase text-sm';
+    }
+
+    if (rollBtn) {
+        rollBtn.disabled = !isMyTurn;
+        rollBtn.innerText = isMyTurn ? 'ROLL DICE' : 'WAITING...';
     }
 }
 
 async function processTileAction(tile) {
     addLog(`Landed on ${tile.label || tile.company}`);
     
-    if (tile.type === BOARD_TILE_TYPES.MARKET_TREND || tile.type === BOARD_TILE_TYPES.WINDFALL) {
+    if (tile.type === BOARD_TILE_TYPES.BUY_SELL) {
+        openTradeModal(tile.company);
+    } else if (tile.type === BOARD_TILE_TYPES.BROKER) {
+        showToast('Land on any stock to trade!');
+        ui.game.mobileMarketPanel.classList.remove('hidden'); // Show market for broker
+    } else if (tile.type === BOARD_TILE_TYPES.MARKET_TREND || tile.type === BOARD_TILE_TYPES.WINDFALL) {
         const card = TREND_CARDS[Math.floor(Math.random() * TREND_CARDS.length)];
         showCardModal(card);
         if (gameData.isHost) applyTrend(card);
     } else if (tile.type === BOARD_TILE_TYPES.DIVIDEND) {
-        updateCash(5000);
+        await updateCash(5000);
         showToast('Received ₹5,000 Dividend!');
     } else if (tile.type === BOARD_TILE_TYPES.TAX) {
-        updateCash(-10000);
+        await updateCash(-10000);
         showToast('Paid ₹10,000 Income Tax', 'error');
+    } else if (tile.type === BOARD_TILE_TYPES.FRAUD) {
+        await updateCash(-20000);
+        showToast('Stock Fraud! Lost ₹20,000', 'error');
     }
+}
+
+async function updateCash(amount) {
+    if (!gameData.player) return;
+    const newCash = Math.max(0, gameData.player.cash + amount);
+    gameData.player.cash = newCash;
+    await sb.from('players').update({ cash: newCash }).eq('id', gameData.player.id);
+    updatePlayerStats();
+}
+
+function openTradeModal(companyName) {
+    const stock = gameData.stocks.find(s => s.name === companyName);
+    if (!stock) return;
+
+    const owned = gameData.portfolio?.find(p => p.stock_id === stock.id)?.quantity || 0;
+    
+    document.getElementById('modal-stock-name').innerText = stock.name;
+    document.getElementById('modal-stock-price').innerText = formatCurrency(stock.current_price);
+    document.getElementById('modal-stock-owned').innerText = `${owned} Shares Owned`;
+    
+    const buyBtn = document.getElementById('buy-stock-btn');
+    const sellBtn = document.getElementById('sell-stock-btn');
+    
+    buyBtn.onclick = () => executeTrade(stock, 10, 'buy');
+    sellBtn.onclick = () => executeTrade(stock, 10, 'sell');
+    sellBtn.disabled = owned < 10;
+
+    ui.modals.overlay.classList.remove('hidden');
+    ui.modals.trade.classList.remove('hidden');
+    ui.modals.card.classList.add('hidden');
+}
+
+async function executeTrade(stock, quantity, type) {
+    const cost = stock.current_price * quantity;
+    
+    if (type === 'buy') {
+        if (gameData.player.cash < cost) return showToast('Not enough cash!', 'error');
+        await updateCash(-cost);
+        
+        const existing = gameData.portfolio?.find(p => p.stock_id === stock.id);
+        if (existing) {
+            const newQty = existing.quantity + quantity;
+            const newAvg = ((existing.quantity * existing.average_buy_price) + cost) / newQty;
+            await sb.from('portfolios').update({ quantity: newQty, average_buy_price: Math.round(newAvg) }).eq('id', existing.id);
+        } else {
+            await sb.from('portfolios').insert([{ player_id: gameData.player.id, stock_id: stock.id, quantity, average_buy_price: stock.current_price }]);
+        }
+        showToast(`Bought ${quantity} shares of ${stock.symbol}`);
+    } else {
+        const existing = gameData.portfolio?.find(p => p.stock_id === stock.id);
+        if (!existing || existing.quantity < quantity) return showToast('Not enough shares!', 'error');
+        
+        await updateCash(cost);
+        const newQty = existing.quantity - quantity;
+        if (newQty === 0) {
+            await sb.from('portfolios').delete().eq('id', existing.id);
+        } else {
+            await sb.from('portfolios').update({ quantity: newQty }).eq('id', existing.id);
+        }
+        showToast(`Sold ${quantity} shares of ${stock.symbol}`);
+    }
+    
+    await fetchPortfolio();
+    ui.modals.overlay.classList.add('hidden');
 }
 
 // ... Rest of the functions remain the same but use direct DOM selection for stability ...
