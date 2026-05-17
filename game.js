@@ -27,6 +27,10 @@ async function createRoom() {
         return showToast('Session Error: Please logout and login again.', 'error');
     }
 
+    // 🔥 FIX: Ensure the profile exists in the database before creating the room
+    // This prevents the 'rooms_host_id_fkey' constraint error if the profiles table was cleared
+    await sb.from('profiles').upsert([{ id: gameData.user.id, username: gameData.user.username }], { onConflict: 'id' });
+
     const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     const { data: room, error } = await sb.from('rooms').insert([{ 
         room_code: roomCode, 
@@ -119,9 +123,11 @@ function subscribeToRoom(roomId) {
     if (roomSubscription) roomSubscription.unsubscribe();
     roomSubscription = sb.channel(`room:${roomId}`).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, 
         payload => {
+            const isRoundChanged = gameData.room && payload.new.round_number !== gameData.room.round_number;
             gameData.room = payload.new;
             if (payload.new.status === 'playing' && ui.screens.game.classList.contains('hidden')) enterGame();
             if (payload.new.status === 'finished') endGame();
+            if (isRoundChanged) fetchHand();
             updateTurnUI();
         }).subscribe();
 
@@ -179,6 +185,48 @@ async function startGame() {
     const { error: stockError } = await sb.from('stocks').insert(stocksToCreate);
     if (stockError) return alert('Market Initialization Failed: ' + stockError.message);
 
+    // Fetch the inserted stocks to get their IDs
+    const { data: insertedStocks } = await sb.from('stocks').select('id, name').eq('room_id', gameData.room.id);
+    
+    // Generate 40 cards per company
+    const cardValues = [-20, -15, -10, -5, 5, 10, 15, 20];
+    let allCards = [];
+    
+    if (insertedStocks) {
+        insertedStocks.forEach(stock => {
+            // 40 cards = 5 sets of the 8 card values
+            for(let i=0; i<5; i++) {
+                cardValues.forEach(val => {
+                    allCards.push({
+                        room_id: gameData.room.id,
+                        stock_id: stock.id,
+                        fluctuation_value: val,
+                        status: 'deck'
+                    });
+                });
+            }
+        });
+        
+        // Shuffle the cards
+        allCards.sort(() => Math.random() - 0.5);
+        
+        // Distribute 10 cards to each player
+        let cardIndex = 0;
+        gameData.players.forEach(player => {
+            for(let i=0; i<10; i++) {
+                if (cardIndex < allCards.length) {
+                    allCards[cardIndex].player_id = player.id;
+                    allCards[cardIndex].status = 'hand';
+                    cardIndex++;
+                }
+            }
+        });
+        
+        // Insert all cards to database
+        const { error: cardsError } = await sb.from('room_cards').insert(allCards);
+        if (cardsError) console.error("Error creating cards:", cardsError);
+    }
+
     await sb.from('rooms').update({ 
         status: 'playing', 
         current_turn_index: 0,
@@ -196,6 +244,7 @@ function enterGame() {
     renderBoard();
     fetchStocks();
     fetchPortfolio();
+    fetchHand();
     
     if (stocksSubscription) stocksSubscription.unsubscribe();
     stocksSubscription = sb.channel(`stocks:${gameData.room.id}`).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stocks', filter: `room_id=eq.${gameData.room.id}` }, 
@@ -241,6 +290,7 @@ function enterGame() {
     // Initial renders
     fetchStocks();
     fetchPortfolio();
+    fetchHand();
     updateTurnUI();
 }
 
@@ -283,7 +333,12 @@ function renderCentralMarket() {
     }).join('');
 }
 
-async function endTurn() {
+async function endTurn(isAutoPlay = false) {
+    if (!isAutoPlay && gameData.hand && gameData.hand.length > 0) {
+        showToast("Submit all your Market Hints before finishing your turn!");
+        return;
+    }
+
     const endBtn = document.getElementById('end-turn-btn');
     if (endBtn) {
         endBtn.disabled = true;
@@ -302,6 +357,7 @@ async function endTurn() {
 
         addLog("Round Complete! Fluctuating Market...");
         await fluctuateMarket();
+        await redistributeCards();
         
         await sb.from('rooms').update({ 
             current_turn_index: 0,
@@ -312,6 +368,44 @@ async function endTurn() {
     }
 }
 
+async function redistributeCards() {
+    // 1. Delete all remaining 'hand' cards for all players to wipe their hands
+    await sb.from('room_cards').delete().eq('room_id', gameData.room.id).eq('status', 'hand');
+
+    // 2. Fetch all remaining cards in the 'deck'
+    const { data: deckCards } = await sb.from('room_cards').select('id').eq('room_id', gameData.room.id).eq('status', 'deck');
+    if (!deckCards || deckCards.length === 0) return;
+
+    // Shuffle the deck cards
+    deckCards.sort(() => Math.random() - 0.5);
+
+    // 3. Give up to 10 new cards to each player
+    let cardIndex = 0;
+    const updates = [];
+    
+    gameData.players.forEach(player => {
+        for(let i=0; i<10; i++) {
+            if (cardIndex < deckCards.length) {
+                updates.push({
+                    id: deckCards[cardIndex].id,
+                    player_id: player.id,
+                    status: 'hand'
+                });
+                cardIndex++;
+            }
+        }
+    });
+
+    // Update the cards in the database to be in the players' hands
+    if (updates.length > 0) {
+        for (const update of updates) {
+            await sb.from('room_cards').update({ player_id: update.player_id, status: 'hand' }).eq('id', update.id);
+        }
+    }
+    
+    await fetchHand();
+}
+
 let turnTimer = null;
 function startTimer() {
     let timeLeft = 45;
@@ -319,13 +413,16 @@ function startTimer() {
     
     if (turnTimer) clearInterval(turnTimer);
     
-    turnTimer = setInterval(() => {
+    turnTimer = setInterval(async () => {
         timeLeft--;
         if (display) display.innerText = `${timeLeft}s`;
         
         if (timeLeft <= 0) {
             clearInterval(turnTimer);
-            endTurn(); // Bot auto-plays
+            if (gameData.hand && gameData.hand.length > 0) {
+                await submitAllCards(); // Auto-submit if they ran out of time
+            }
+            endTurn(true); // Bot auto-plays
         }
     }, 1000);
 }
@@ -380,16 +477,33 @@ async function endGame() {
 }
 
 async function fluctuateMarket() {
+    // 1. Fetch all submitted cards for this room
+    const { data: submittedCards } = await sb.from('room_cards').select('*').eq('room_id', gameData.room.id).eq('status', 'submitted');
+    
+    // 2. Group fluctuations by stock_id
+    const fluctuations = {};
+    if (submittedCards) {
+        submittedCards.forEach(c => {
+            fluctuations[c.stock_id] = (fluctuations[c.stock_id] || 0) + c.fluctuation_value;
+        });
+    }
+
+    // 3. Apply fluctuations to stocks
     for (const stock of gameData.stocks) {
-        const volatility = stock.volatility === 'HIGH' ? 0.25 : stock.volatility === 'MED' ? 0.15 : 0.08;
-        const changePercent = (Math.random() * volatility * 2) - volatility;
+        const changePercent = (fluctuations[stock.id] || 0) / 100; // e.g., +15 becomes 0.15
         const changeAmount = Math.round(stock.current_price * changePercent);
-        const newPrice = Math.max(10, stock.current_price + changeAmount);
+        const newPrice = Math.max(10, stock.current_price + changeAmount); // Prevents price going to 0 or negative
         
         await sb.from('stocks').update({ 
             current_price: newPrice,
             last_change: changeAmount
         }).eq('id', stock.id);
+    }
+    
+    // 4. Delete the submitted cards so they aren't reused next round
+    if (submittedCards && submittedCards.length > 0) {
+        const idsToDelete = submittedCards.map(c => c.id);
+        await sb.from('room_cards').delete().in('id', idsToDelete);
     }
 }
 
@@ -499,8 +613,22 @@ function updateTurnUI() {
     }
 
     if (endBtn) {
-        endBtn.disabled = !isMyTurn;
-        endBtn.innerText = isMyTurn ? 'FINISH TRADING' : 'WAITING...';
+        if (isMyTurn) {
+            const hasCards = gameData.hand && gameData.hand.length > 0;
+            endBtn.disabled = hasCards;
+            endBtn.innerText = hasCards ? 'SUBMIT CARDS FIRST' : 'FINISH TRADING';
+            if (hasCards) {
+                endBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                endBtn.classList.remove('hover:bg-secondary');
+            } else {
+                endBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                endBtn.classList.add('hover:bg-secondary');
+            }
+        } else {
+            endBtn.disabled = true;
+            endBtn.innerText = 'WAITING...';
+            endBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
     }
 }
 
@@ -638,6 +766,73 @@ async function fetchPortfolio() {
     gameData.portfolio = portfolio;
     renderPortfolio();
     updatePlayerStats();
+}
+
+async function fetchHand() {
+    if (!gameData.player) return;
+    const { data: hand } = await sb.from('room_cards').select('*, stocks(*)').eq('player_id', gameData.player.id).eq('status', 'hand');
+    gameData.hand = hand || [];
+    renderHand();
+    updateTurnUI();
+}
+
+function renderHand() {
+    const list = document.getElementById('hand-list');
+    const mobileList = document.getElementById('mobile-hand-list');
+    
+    if (!gameData.hand || gameData.hand.length === 0) {
+        const emptyHtml = '<div class="text-center py-6 opacity-20"><p class="text-xs font-bold">No Cards Available</p></div>';
+        if (list) list.innerHTML = emptyHtml;
+        if (mobileList) mobileList.innerHTML = emptyHtml;
+        return;
+    }
+    
+    const html = gameData.hand.map(card => {
+        const isPos = card.fluctuation_value >= 0;
+        return `
+            <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center justify-between mb-2">
+                <div>
+                    <p class="text-xs font-bold">${card.stocks?.name || 'Unknown'}</p>
+                    <p class="text-[10px] ${isPos ? 'text-bull' : 'text-bear'} font-bold tracking-widest">${isPos ? '+' : ''}${card.fluctuation_value}%</p>
+                </div>
+                <button onclick="submitCard('${card.id}')" class="bg-primary/20 hover:bg-primary/40 text-primary px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-colors">
+                    Submit
+                </button>
+            </div>
+        `;
+    }).join('');
+    
+    if (list) list.innerHTML = html;
+    if (mobileList) mobileList.innerHTML = html;
+}
+
+async function submitCard(cardId) {
+    if (!gameData.player) return;
+    const card = gameData.hand.find(c => c.id === cardId);
+    if (!card) return;
+    
+    // Check if player has already submitted a card this round
+    const { data: submitted } = await sb.from('room_cards').select('id').eq('player_id', gameData.player.id).eq('status', 'submitted');
+    
+    // In this simplified logic, we allow 1 submission per round. If they already submitted, we can either block or let them override.
+    // Let's block them if they already submitted.
+    if (submitted && submitted.length > 0) {
+        return showToast("You have already submitted a card for this round!");
+    }
+    
+    await sb.from('room_cards').update({ status: 'submitted' }).eq('id', cardId);
+    showToast(`Submitted ${card.stocks.symbol} ${card.fluctuation_value > 0 ? '+' : ''}${card.fluctuation_value}%`);
+    await fetchHand();
+}
+
+async function submitAllCards() {
+    if (!gameData.player || !gameData.hand || gameData.hand.length === 0) return;
+    
+    const handCardIds = gameData.hand.map(c => c.id);
+    await sb.from('room_cards').update({ status: 'submitted' }).in('id', handCardIds);
+    
+    showToast(`Submitted all ${handCardIds.length} cards to the market!`);
+    await fetchHand();
 }
 
 function renderMarket() {

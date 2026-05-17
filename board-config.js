@@ -1,13 +1,13 @@
 // Board Layout and Game Content Configuration
 
 const COMPANIES = [
-    { name: 'TATA STEEL', symbol: 'TATA', color: '#3b82f6', sector: 'Steel', basePrice: 400 },
+    { name: 'RELIANCE IND', symbol: 'RELIANCE', color: '#6366f1', sector: 'Energy', basePrice: 2400 },
+    { name: 'TCS', symbol: 'TCS', color: '#3b82f6', sector: 'IT', basePrice: 3800 },
+    { name: 'HDFC BANK', symbol: 'HDFCBANK', color: '#f59e0b', sector: 'Finance', basePrice: 1600 },
     { name: 'INFOSYS', symbol: 'INFY', color: '#10b981', sector: 'IT', basePrice: 1500 },
-    { name: 'RELIANCE', symbol: 'RELI', color: '#6366f1', sector: 'Energy', basePrice: 2400 },
-    { name: 'HDFC BANK', symbol: 'HDFC', color: '#f59e0b', sector: 'Finance', basePrice: 1600 },
-    { name: 'SBI', symbol: 'SBI', color: '#0ea5e9', sector: 'Banking', basePrice: 500 },
-    { name: 'HINDUNILVR', symbol: 'HUL', color: '#ec4899', sector: 'FMCG', basePrice: 2500 },
-    { name: 'NIFTY 50', symbol: 'NIFTY', color: '#8b5cf6', sector: 'Index', basePrice: 18000 }
+    { name: 'ICICI BANK', symbol: 'ICICIBANK', color: '#ec4899', sector: 'Finance', basePrice: 1000 },
+    { name: 'SBI', symbol: 'SBIN', color: '#0ea5e9', sector: 'Banking', basePrice: 600 },
+    { name: 'BHARTI AIRTEL', symbol: 'BHARTIARTL', color: '#8b5cf6', sector: 'Telecom', basePrice: 1200 }
 ];
 
 const BOARD_TILE_TYPES = {
@@ -23,25 +23,25 @@ const BOARD_TILE_TYPES = {
 
 const BOARD_TILES = [
     { id: 0, type: BOARD_TILE_TYPES.START, label: 'START' },
-    { id: 1, type: BOARD_TILE_TYPES.BUY_SELL, company: 'TATA STEEL' },
+    { id: 1, type: BOARD_TILE_TYPES.BUY_SELL, company: 'RELIANCE IND' },
     { id: 2, type: BOARD_TILE_TYPES.MARKET_TREND, label: 'TREND' },
-    { id: 3, type: BOARD_TILE_TYPES.BUY_SELL, company: 'INFOSYS' },
+    { id: 3, type: BOARD_TILE_TYPES.BUY_SELL, company: 'TCS' },
     { id: 4, type: BOARD_TILE_TYPES.BROKER, label: 'BROKER' },
-    { id: 5, type: BOARD_TILE_TYPES.BUY_SELL, company: 'RELIANCE' },
+    { id: 5, type: BOARD_TILE_TYPES.BUY_SELL, company: 'HDFC BANK' },
     { id: 6, type: BOARD_TILE_TYPES.TAX, label: 'INC TAX' },
-    { id: 7, type: BOARD_TILE_TYPES.BUY_SELL, company: 'HDFC BANK' },
+    { id: 7, type: BOARD_TILE_TYPES.BUY_SELL, company: 'INFOSYS' },
     { id: 8, type: BOARD_TILE_TYPES.WINDFALL, label: 'WINDFALL' },
-    { id: 9, type: BOARD_TILE_TYPES.BUY_SELL, company: 'SBI' },
+    { id: 9, type: BOARD_TILE_TYPES.BUY_SELL, company: 'ICICI BANK' },
     { id: 10, type: BOARD_TILE_TYPES.DIVIDEND, label: 'DIVIDEND' },
-    { id: 11, type: BOARD_TILE_TYPES.BUY_SELL, company: 'HINDUNILVR' },
+    { id: 11, type: BOARD_TILE_TYPES.BUY_SELL, company: 'SBI' },
     { id: 12, type: BOARD_TILE_TYPES.FRAUD, label: 'FRAUD' },
-    { id: 13, type: BOARD_TILE_TYPES.BUY_SELL, company: 'NIFTY 50' },
+    { id: 13, type: BOARD_TILE_TYPES.BUY_SELL, company: 'BHARTI AIRTEL' },
     { id: 14, type: BOARD_TILE_TYPES.MARKET_TREND, label: 'TREND' },
-    { id: 15, type: BOARD_TILE_TYPES.BUY_SELL, company: 'TATA STEEL' },
+    { id: 15, type: BOARD_TILE_TYPES.BUY_SELL, company: 'RELIANCE IND' },
     { id: 16, type: BOARD_TILE_TYPES.BROKER, label: 'BROKER' },
-    { id: 17, type: BOARD_TILE_TYPES.BUY_SELL, company: 'INFOSYS' },
+    { id: 17, type: BOARD_TILE_TYPES.BUY_SELL, company: 'TCS' },
     { id: 18, type: BOARD_TILE_TYPES.WINDFALL, label: 'WINDFALL' },
-    { id: 19, type: BOARD_TILE_TYPES.BUY_SELL, company: 'RELIANCE' }
+    { id: 19, type: BOARD_TILE_TYPES.BUY_SELL, company: 'HDFC BANK' }
 ];
 
 const TREND_CARDS = [
