@@ -106,7 +106,7 @@
             </div>
 
             <div class="grid grid-cols-1 gap-4">
-                <button id="create-room-btn" class="relative overflow-hidden group bg-gradient-to-br from-bull/20 to-emerald-900/20 border border-bull/30 hover:border-bull/60 p-8 rounded-[2rem] transition-all flex flex-col items-center text-center">
+                <button id="create-room-btn" class="relative overflow-hidden group bg-gradient-to-br from-bull/20 to-emerald-900/20 border border-bull/30 hover:border-bull/60 p-6 md:p-8 rounded-[2rem] transition-all flex flex-col items-center text-center">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"></path></svg>
                     </div>
@@ -117,16 +117,16 @@
                     <p class="text-white/40 max-w-[200px]">Host a virtual room and invite your friends</p>
                 </button>
 
-                <div class="bg-primary/10 border border-primary/20 p-8 rounded-[2rem] backdrop-blur-md">
+                <div class="bg-primary/10 border border-primary/20 p-6 md:p-8 rounded-[2rem] backdrop-blur-md">
                     <div class="flex items-center gap-4 mb-6">
                         <div class="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                         </div>
                         <h3 class="text-xl font-bold">Join Game</h3>
                     </div>
-                    <div class="flex gap-3">
+                    <div class="flex flex-col md:flex-row gap-3">
                         <input type="text" id="room-code-input" class="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-center text-2xl font-mono uppercase tracking-widest focus:outline-none focus:border-primary focus:bg-white/10 transition-all" placeholder="CODE">
-                        <button id="join-room-btn" class="bg-primary hover:bg-secondary px-8 rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-primary/20">JOIN</button>
+                        <button id="join-room-btn" class="bg-primary hover:bg-secondary py-4 md:py-0 md:px-8 rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-primary/20">JOIN</button>
                     </div>
                 </div>
             </div>
@@ -134,19 +134,19 @@
     </div>
 
     <!-- Waiting Room -->
-    <div id="waiting-screen" class="hidden fixed inset-0 z-30 bg-dark flex flex-col items-center justify-center p-6">
-        <div class="w-full max-w-md bg-white/5 border border-white/10 rounded-[2.5rem] p-10 text-center relative backdrop-blur-xl">
+    <div id="waiting-screen" class="hidden fixed inset-0 z-30 bg-dark flex flex-col items-center justify-center p-6 overflow-y-auto">
+        <div class="w-full max-w-md bg-white/5 border border-white/10 rounded-[2.5rem] p-6 md:p-10 text-center relative backdrop-blur-xl mt-10 md:mt-0 my-auto">
             <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-dark border-4 border-primary rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.3)] animate-pulse-slow">
                 <span id="player-count" class="text-3xl font-bold text-primary">0</span>
             </div>
             
-            <h2 class="text-3xl font-bold mb-2 mt-8 text-white/90">Game Lobby</h2>
-            <div class="flex flex-col items-center gap-3 p-6 bg-white/5 rounded-3xl border border-white/5 mb-8">
+            <h2 class="text-2xl md:text-3xl font-bold mb-2 mt-8 text-white/90">Game Lobby</h2>
+            <div class="flex flex-col items-center gap-2 md:gap-3 p-4 md:p-6 bg-white/5 rounded-3xl border border-white/5 mb-6 md:mb-8">
                 <span class="text-xs font-bold text-white/40 uppercase tracking-widest">Share this Room Code</span>
-                <div class="flex items-center gap-4">
-                    <span id="current-room-code" class="text-4xl font-mono font-black text-primary tracking-[0.2em]">XXXXXX</span>
-                    <button id="copy-link-btn" class="w-12 h-12 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-all">
-                        <svg class="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                <div class="flex items-center gap-2 md:gap-4">
+                    <span id="current-room-code" class="text-3xl md:text-4xl font-mono font-black text-primary tracking-[0.2em]">XXXXXX</span>
+                    <button id="copy-link-btn" class="w-10 h-10 md:w-12 md:h-12 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-all">
+                        <svg class="w-5 h-5 md:w-6 md:h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
                     </button>
                 </div>
             </div>
@@ -156,11 +156,11 @@
             </div>
 
             <div class="space-y-4">
-            <div class="flex gap-4">
-                <button id="start-game-btn" class="hidden flex-[2] bg-bull hover:bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-bull/20 transition-all active:scale-95 disabled:opacity-50 text-xl tracking-wider">
+            <div class="flex flex-col md:flex-row gap-3 md:gap-4">
+                <button id="start-game-btn" class="hidden flex-[2] bg-bull hover:bg-emerald-600 text-white font-black py-4 md:py-5 rounded-2xl shadow-xl shadow-bull/20 transition-all active:scale-95 disabled:opacity-50 text-lg md:text-xl tracking-wider">
                     START MATCH
                 </button>
-                <button id="leave-room-btn" class="flex-1 bg-white/5 hover:bg-white/10 text-white/40 font-bold py-5 rounded-2xl border border-white/5 transition-all text-sm uppercase tracking-widest">
+                <button id="leave-room-btn" class="flex-1 bg-white/5 hover:bg-white/10 text-white/40 font-bold py-4 md:py-5 rounded-2xl border border-white/5 transition-all text-sm uppercase tracking-widest">
                     LEAVE
                 </button>
             </div>
@@ -205,68 +205,79 @@
         </div>
 
         <!-- Center: The Board -->
-        <div class="flex-1 relative flex items-center justify-center p-4 bg-gradient-to-b from-[#111116] to-[#0a0a0c]">
+        <div class="flex-1 relative flex flex-col items-center justify-center px-4 pt-20 pb-24 md:p-4 bg-gradient-to-b from-[#111116] to-[#0a0a0c] h-full overflow-hidden">
             <!-- Mobile HUD -->
             <div class="absolute top-4 left-4 right-4 flex md:hidden items-center justify-between z-20">
-                <div class="bg-white/5 backdrop-blur-xl px-4 py-3 rounded-2xl border border-white/10 flex items-center gap-3 shadow-2xl">
-                    <div class="w-8 h-8 bg-bull/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-bull" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path></svg>
+                <div class="bg-white/5 backdrop-blur-xl px-3 py-2 rounded-2xl border border-white/10 flex items-center gap-2 shadow-2xl">
+                    <div class="w-6 h-6 bg-bull/20 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-bull" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path></svg>
                     </div>
-                    <span id="mobile-cash" class="font-black text-lg">₹100,000</span>
+                    <span id="mobile-cash" class="font-black text-base">₹100,000</span>
                 </div>
-                <div class="bg-white/5 backdrop-blur-xl px-4 py-3 rounded-2xl border border-white/10 flex items-center gap-2 shadow-2xl">
-                    <p id="current-player-turn" class="font-black text-primary uppercase text-sm">Your Turn</p>
+                <div class="flex items-center gap-2">
+                    <div class="bg-white/5 backdrop-blur-xl px-3 py-2 rounded-2xl border border-white/10 flex items-center gap-2 shadow-2xl">
+                        <p id="current-player-turn" class="font-black text-primary uppercase text-xs">Your Turn</p>
+                    </div>
+                    <button id="mobile-leave-btn" class="bg-bear/20 hover:bg-bear/30 backdrop-blur-xl w-10 h-10 rounded-2xl border border-bear/30 flex items-center justify-center text-bear shadow-2xl transition-all active:scale-95">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    </button>
                 </div>
             </div>
 
             <!-- Live Market Focus Area -->
-            <div id="market-focus-area" class="relative w-full max-w-[800px] bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-8 shadow-[0_0_100px_rgba(0,0,0,0.8)] z-10 overflow-hidden">
+            <div id="market-focus-area" class="relative w-full max-w-[800px] h-full md:h-auto flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl md:rounded-[3rem] p-5 md:p-8 shadow-[0_0_100px_rgba(0,0,0,0.8)] z-10 overflow-hidden">
                 <!-- Header -->
-                <div class="flex items-center justify-between mb-8">
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-8 gap-4 md:gap-0 shrink-0">
                     <div>
-                        <h2 class="text-4xl font-black text-white tracking-tighter">STOCK MARKET</h2>
+                        <h2 class="text-2xl md:text-4xl font-black text-white tracking-tighter">STOCK MARKET</h2>
                         <div class="flex items-center gap-2 mt-1">
                             <span class="w-2 h-2 bg-bull rounded-full animate-pulse"></span>
                             <span id="session-status" class="text-[10px] font-black text-bull uppercase tracking-[0.3em]">Trading Session Open</span>
                         </div>
                     </div>
-                    <div class="bg-white/5 px-6 py-3 rounded-2xl border border-white/5 text-right flex items-center gap-6">
-                        <div>
-                            <p class="text-[10px] font-black text-white/40 uppercase tracking-widest">Time Remaining</p>
-                            <p id="timer-display" class="text-2xl font-black text-bear animate-pulse">45s</p>
+                    <div class="bg-white/5 px-4 py-3 md:px-6 md:py-3 rounded-2xl border border-white/5 flex items-center justify-between md:justify-end gap-4 md:gap-6 w-full md:w-auto">
+                        <div class="text-left md:text-right">
+                            <p class="text-[9px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">Time Remaining</p>
+                            <p id="timer-display" class="text-xl md:text-2xl font-black text-bear animate-pulse">45s</p>
                         </div>
-                        <div class="w-px h-10 bg-white/10"></div>
-                        <div>
-                            <p class="text-[10px] font-black text-white/40 uppercase tracking-widest">Active Round</p>
-                            <p id="round-display" class="text-2xl font-black text-primary">1 / 3</p>
+                        <div class="w-px h-8 md:h-10 bg-white/10"></div>
+                        <div class="text-right">
+                            <p class="text-[9px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">Active Round</p>
+                            <p id="round-display" class="text-xl md:text-2xl font-black text-primary">1 / 3</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Market Table -->
-                <div class="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar" id="central-market-list">
+                <div class="flex-1 space-y-3 md:space-y-4 md:max-h-[500px] overflow-y-auto pr-2 md:pr-4 custom-scrollbar" id="central-market-list">
                     <!-- Stocks will be injected here via JS -->
-                    <div class="flex items-center justify-center h-40 text-white/20 font-bold uppercase tracking-widest">
+                    <div class="flex items-center justify-center h-40 text-white/20 font-bold uppercase tracking-widest text-center text-xs md:text-base">
                         Initializing Market Data...
                     </div>
                 </div>
 
                 <!-- Footer Action -->
-                <div class="mt-10 flex items-center justify-between gap-6 border-t border-white/5 pt-8">
-                    <div class="flex-1">
-                        <p class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Turn Management</p>
-                        <p id="turn-indicator-text" class="text-sm font-bold text-white/80">Waiting for other players...</p>
+                <div class="mt-4 md:mt-10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6 border-t border-white/5 pt-4 md:pt-8 shrink-0">
+                    <div class="text-center md:text-left">
+                        <p class="text-[9px] md:text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Turn Management</p>
+                        <p id="turn-indicator-text" class="text-xs md:text-sm font-bold text-white/80">Waiting for other players...</p>
                     </div>
-                    <button id="end-turn-btn" class="flex-[2] bg-primary hover:bg-blue-600 text-white font-black py-5 rounded-2xl shadow-2xl shadow-primary/30 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale text-lg tracking-widest uppercase">
+                    <button id="end-turn-btn" class="w-full md:w-auto flex-[2] bg-primary hover:bg-blue-600 text-white font-black py-4 md:py-5 rounded-2xl shadow-2xl shadow-primary/30 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale text-sm md:text-lg tracking-widest uppercase">
                         FINISH TRADING
                     </button>
                 </div>
             </div>
 
             <!-- Mobile Bottom Bar -->
-            <div class="absolute bottom-6 left-6 right-6 flex md:hidden gap-3 z-20">
-                <button id="mobile-portfolio-btn" class="flex-1 bg-white/5 backdrop-blur-xl py-4 rounded-2xl border border-white/10 font-black text-xs uppercase tracking-widest shadow-2xl">Portfolio</button>
-                <button id="mobile-market-btn" class="flex-1 bg-white/5 backdrop-blur-xl py-4 rounded-2xl border border-white/10 font-black text-xs uppercase tracking-widest shadow-2xl">Market</button>
+            <div class="absolute bottom-4 left-4 right-4 flex md:hidden gap-3 z-20">
+                <button id="mobile-portfolio-btn" class="flex-1 bg-white/5 backdrop-blur-xl py-3 rounded-2xl border border-white/10 font-black text-xs uppercase tracking-widest shadow-2xl flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    Portfolio
+                </button>
+                <button id="mobile-market-btn" class="flex-1 bg-white/5 backdrop-blur-xl py-3 rounded-2xl border border-white/10 font-black text-xs uppercase tracking-widest shadow-2xl flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Market
+                </button>
             </div>
         </div>
 
@@ -312,13 +323,13 @@
     <div id="modal-overlay" class="hidden fixed inset-0 z-[60] bg-dark/95 backdrop-blur-xl flex items-center justify-center p-4">
         
         <!-- 1. Stock Trade Modal -->
-        <div id="trade-modal" class="hidden w-full max-w-sm bg-[#16161a] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden modal-content modal-scroll">
+        <div id="trade-modal" class="hidden w-full max-w-sm bg-[#16161a] border border-white/10 rounded-[2.5rem] p-6 md:p-8 shadow-2xl relative overflow-hidden modal-content modal-scroll">
             <div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
-            <div class="flex justify-between items-start mb-8 relative z-10">
+            <div class="flex justify-between items-start mb-6 md:mb-8 relative z-10">
                 <div>
-                    <h2 id="trade-stock-name" class="text-3xl font-black tracking-tight">INFOSYS</h2>
+                    <h2 id="trade-stock-name" class="text-2xl md:text-3xl font-black tracking-tight">INFOSYS</h2>
                     <div class="flex items-center gap-2 mt-1">
-                        <span id="trade-stock-price" class="text-bull font-black text-xl">₹0</span>
+                        <span id="trade-stock-price" class="text-bull font-black text-lg md:text-xl">₹0</span>
                         <span class="text-[10px] font-bold text-white/30 uppercase">per share</span>
                     </div>
                 </div>
@@ -326,32 +337,32 @@
                     <svg class="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <div class="space-y-6 relative z-10">
+            <div class="space-y-4 md:space-y-6 relative z-10">
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-black/40 p-4 rounded-2xl border border-white/5">
+                    <div class="bg-black/40 p-3 md:p-4 rounded-2xl border border-white/5">
                         <p class="text-[10px] font-black text-white/30 uppercase mb-1">Your Shares</p>
-                        <p id="trade-user-holding" class="text-lg font-black">0</p>
+                        <p id="trade-user-holding" class="text-base md:text-lg font-black">0</p>
                     </div>
-                    <div class="bg-black/40 p-4 rounded-2xl border border-white/5">
+                    <div class="bg-black/40 p-3 md:p-4 rounded-2xl border border-white/5">
                         <p class="text-[10px] font-black text-white/30 uppercase mb-1">Avg Cost</p>
-                        <p id="trade-user-avg" class="text-lg font-black">₹0</p>
+                        <p id="trade-user-avg" class="text-base md:text-lg font-black">₹0</p>
                     </div>
                 </div>
-                <div class="bg-black/20 p-6 rounded-3xl border border-white/5">
+                <div class="bg-black/20 p-4 md:p-6 rounded-3xl border border-white/5">
                     <label class="block text-[10px] font-black text-white/40 uppercase tracking-widest text-center mb-4">Select Quantity</label>
-                    <div class="flex items-center justify-between gap-6">
-                        <button id="qty-minus" class="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-2xl font-black">-</button>
-                        <input type="number" id="trade-qty" class="flex-1 bg-transparent text-center text-4xl font-black focus:outline-none w-20" value="1" />
-                        <button id="qty-plus" class="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-2xl font-black">+</button>
+                    <div class="flex items-center justify-between gap-4 md:gap-6">
+                        <button id="qty-minus" class="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-xl md:text-2xl font-black">-</button>
+                        <input type="number" id="trade-qty" class="flex-1 bg-transparent text-center text-3xl md:text-4xl font-black focus:outline-none w-16 md:w-20" value="1" />
+                        <button id="qty-plus" class="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-xl md:text-2xl font-black">+</button>
                     </div>
                 </div>
                 <div class="flex items-center justify-between px-2">
-                    <span class="text-xs font-bold text-white/40 uppercase">Total Transaction</span>
-                    <span id="trade-total" class="text-xl font-black text-primary">₹0</span>
+                    <span class="text-[10px] md:text-xs font-bold text-white/40 uppercase">Total Transaction</span>
+                    <span id="trade-total" class="text-lg md:text-xl font-black text-primary">₹0</span>
                 </div>
-                <div class="flex gap-4">
-                    <button id="buy-btn" class="flex-1 bg-bull hover:bg-emerald-600 text-white font-black py-5 rounded-2xl transition-all">BUY</button>
-                    <button id="sell-btn" class="flex-1 bg-bear hover:bg-rose-600 text-white font-black py-5 rounded-2xl transition-all">SELL</button>
+                <div class="flex gap-3 md:gap-4">
+                    <button id="buy-btn" class="flex-1 bg-bull hover:bg-emerald-600 text-white font-black py-4 md:py-5 rounded-2xl transition-all text-sm md:text-base">BUY</button>
+                    <button id="sell-btn" class="flex-1 bg-bear hover:bg-rose-600 text-white font-black py-4 md:py-5 rounded-2xl transition-all text-sm md:text-base">SELL</button>
                 </div>
             </div>
         </div>

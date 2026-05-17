@@ -204,9 +204,39 @@ function enterGame() {
     // Re-bind game controls
     const endTurnBtn = document.getElementById('end-turn-btn');
     const leaveBtn = document.getElementById('leave-game-btn');
+    const mobileLeaveBtn = document.getElementById('mobile-leave-btn');
+    
+    const mobilePortBtn = document.getElementById('mobile-portfolio-btn');
+    const mobileMarkBtn = document.getElementById('mobile-market-btn');
 
     if (endTurnBtn) endTurnBtn.onclick = endTurn;
     if (leaveBtn) leaveBtn.onclick = leaveMatch;
+    if (mobileLeaveBtn) mobileLeaveBtn.onclick = leaveMatch;
+    
+    if (mobilePortBtn) {
+        mobilePortBtn.onclick = () => {
+            ui.game.mobilePortfolioPanel.classList.remove('hidden');
+        };
+    }
+    
+    if (mobileMarkBtn) {
+        mobileMarkBtn.onclick = () => {
+            ui.game.mobileMarketPanel.classList.remove('hidden');
+        };
+    }
+
+    // Close panel buttons
+    if (ui.modals.closeBtns) {
+        ui.modals.closeBtns.forEach(btn => {
+            btn.onclick = () => {
+                ui.modals.overlay.classList.add('hidden');
+                ui.modals.trade.classList.add('hidden');
+                ui.modals.card.classList.add('hidden');
+                if (ui.game.mobileMarketPanel) ui.game.mobileMarketPanel.classList.add('hidden');
+                if (ui.game.mobilePortfolioPanel) ui.game.mobilePortfolioPanel.classList.add('hidden');
+            };
+        });
+    }
     
     // Initial renders
     fetchStocks();
@@ -223,28 +253,28 @@ function renderCentralMarket() {
         const isUp = change >= 0;
         
         return `
-            <div class="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/5 hover:bg-white/10 transition-all group">
-                <div class="flex items-center gap-5">
-                    <div class="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-black text-xl group-hover:scale-110 transition-transform">
+            <div class="flex items-center justify-between p-4 md:p-6 bg-white/5 rounded-3xl border border-white/5 hover:bg-white/10 transition-all group">
+                <div class="flex items-center gap-3 md:gap-5">
+                    <div class="w-12 h-12 md:w-14 md:h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-black text-lg md:text-xl group-hover:scale-110 transition-transform shrink-0">
                         ${stock.symbol}
                     </div>
                     <div>
-                        <h4 class="text-lg font-black text-white tracking-tight">${stock.name}</h4>
+                        <h4 class="text-base md:text-lg font-black text-white tracking-tight">${stock.name}</h4>
                         <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold text-white/30 uppercase tracking-widest">${stock.volatility} VOLATILITY</span>
+                            <span class="text-[9px] md:text-[10px] font-bold text-white/30 uppercase tracking-widest">${stock.volatility} VOLATILITY</span>
                         </div>
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-8">
+                <div class="flex items-center gap-3 md:gap-8">
                     <div class="text-right">
-                        <p class="text-2xl font-black text-white">${formatCurrency(stock.current_price)}</p>
-                        <p class="text-sm font-bold ${isUp ? 'text-bull' : 'text-bear'}">
+                        <p class="text-lg md:text-2xl font-black text-white">${formatCurrency(stock.current_price)}</p>
+                        <p class="text-[10px] md:text-sm font-bold ${isUp ? 'text-bull' : 'text-bear'}">
                             ${isUp ? '▲' : '▼'} ${formatCurrency(Math.abs(change))}
                         </p>
                     </div>
                     <button onclick="openTradeModal('${stock.name}')" 
-                        class="bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95">
+                        class="bg-white/5 hover:bg-white/10 border border-white/10 px-4 md:px-6 py-3 md:py-3 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest transition-all active:scale-95 shrink-0">
                         TRADE
                     </button>
                 </div>
@@ -627,7 +657,9 @@ function renderMarket() {
     `).join('');
     
     const list = document.getElementById('market-list');
+    const mobileList = document.getElementById('mobile-market-list');
     if (list) list.innerHTML = sidebarHtml;
+    if (mobileList) mobileList.innerHTML = sidebarHtml;
 }
 
 function renderPortfolio() {
