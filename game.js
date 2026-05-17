@@ -127,7 +127,10 @@ function subscribeToRoom(roomId) {
             gameData.room = payload.new;
             if (payload.new.status === 'playing' && ui.screens.game.classList.contains('hidden')) enterGame();
             if (payload.new.status === 'finished') endGame();
-            if (isRoundChanged) fetchHand();
+            if (isRoundChanged) {
+                gameData.hasTradedThisRound = false;
+                fetchHand();
+            }
             updateTurnUI();
         }).subscribe();
 
@@ -406,26 +409,7 @@ async function redistributeCards() {
     await fetchHand();
 }
 
-let turnTimer = null;
-function startTimer() {
-    let timeLeft = 45;
-    const display = document.getElementById('timer-display');
-    
-    if (turnTimer) clearInterval(turnTimer);
-    
-    turnTimer = setInterval(async () => {
-        timeLeft--;
-        if (display) display.innerText = `${timeLeft}s`;
-        
-        if (timeLeft <= 0) {
-            clearInterval(turnTimer);
-            if (gameData.hand && gameData.hand.length > 0) {
-                await submitAllCards(); // Auto-submit if they ran out of time
-            }
-            endTurn(true); // Bot auto-plays
-        }
-    }, 1000);
-}
+
 
 async function endGame() {
     // 1. Fetch all players and their portfolios
@@ -599,13 +583,7 @@ function updateTurnUI() {
 
     if (roundDisplay) roundDisplay.innerText = `${gameData.room.round_number || 1} / 3`;
 
-    if (isMyTurn) {
-        startTimer();
-    } else {
-        if (turnTimer) clearInterval(turnTimer);
-        const display = document.getElementById('timer-display');
-        if (display) display.innerText = '45s';
-    }
+
 
     if (turnIndicator) {
         turnIndicator.innerText = isMyTurn ? 'IT IS YOUR TURN TO TRADE' : `WAITING FOR ${currentPlayer?.profiles?.username?.toUpperCase() || 'PLAYER'}...`;
@@ -656,6 +634,10 @@ async function updateCash(amount) {
 }
 
 function openTradeModal(companyName) {
+    if (gameData.hasTradedThisRound) {
+        return showToast("You have already traded this round!");
+    }
+    
     const stock = gameData.stocks.find(s => s.name === companyName);
     if (!stock) return;
 
@@ -735,6 +717,7 @@ async function executeTrade(stock, quantity, type) {
         showToast(`Sold ${quantity} shares of ${stock.symbol} (Short Position)`);
     }
     
+    gameData.hasTradedThisRound = true;
     await fetchPortfolio();
     ui.modals.overlay.classList.add('hidden'); // Close after trade
 }
