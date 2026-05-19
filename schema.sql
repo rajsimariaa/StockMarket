@@ -1,23 +1,36 @@
 -- ==========================================
--- STOCK MARKET TRADING SIMULATOR (FINAL)
+-- STOCK MARKET TRADING SIMULATOR (UPDATED SCHEMA)
 -- ==========================================
 -- This schema supports:
 -- 1. Card-based market fluctuation logic 
 -- 2. Max 10 players per room
 -- 3. Top 7 Indian Companies
 -- 4. Net-worth based leaderboard calculation
+-- 5. Multi-round host selection & Sub-rounds (3 sub-rounds per round)
+-- 6. Player exit voting system (Distribute vs Discard with 75% Majority check)
+-- 7. Secure local authentication state tables
 
 -- Clean up existing tables
+DROP TABLE IF EXISTS public.room_votes CASCADE;
 DROP TABLE IF EXISTS public.room_cards CASCADE;
 DROP TABLE IF EXISTS public.portfolios CASCADE;
 DROP TABLE IF EXISTS public.stocks CASCADE;
 DROP TABLE IF EXISTS public.players CASCADE;
 DROP TABLE IF EXISTS public.rooms CASCADE;
--- Do NOT drop profiles so user identities persist across schema resets
+DROP TABLE IF EXISTS public.profiles CASCADE;
+DROP TABLE IF EXISTS public.game_users CASCADE;
+
+-- 0. Game Users: Authentication states
+CREATE TABLE public.game_users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT UNIQUE NOT NULL,
+    password_text TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- 1. Profiles: Core user identity
-CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY, -- Linked to Supabase Auth ID
+CREATE TABLE public.profiles (
+    id UUID PRIMARY KEY REFERENCES public.game_users(id) ON DELETE CASCADE,
     username TEXT UNIQUE NOT NULL,
     avatar_url TEXT,
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -31,8 +44,11 @@ CREATE TABLE public.rooms (
     status TEXT DEFAULT 'lobby' CHECK (status IN ('lobby', 'playing', 'finished')),
     current_turn_index INTEGER DEFAULT 0,
     round_number INTEGER DEFAULT 1,
-    max_rounds INTEGER DEFAULT 3,
-    max_players INTEGER DEFAULT 10, -- Enforced limit of 10 players
+    current_sub_round INTEGER DEFAULT 1 CHECK (current_sub_round BETWEEN 1 AND 3),
+    max_rounds INTEGER DEFAULT 3 CHECK (max_rounds BETWEEN 1 AND 20),
+    max_players INTEGER DEFAULT 10,
+    leaving_player_id UUID, -- References players(id), set when a player initiates leaving
+    vote_distribution_type TEXT DEFAULT 'none' CHECK (vote_distribution_type IN ('none', 'active')),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -41,15 +57,17 @@ CREATE TABLE public.players (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     room_id UUID REFERENCES public.rooms(id) ON DELETE CASCADE,
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    cash BIGINT DEFAULT 100000,
-    net_worth BIGINT DEFAULT 100000,
+    cash BIGINT DEFAULT 1000000,
+    net_worth BIGINT DEFAULT 1000000,
     is_ready BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(room_id, user_id)
 );
 
+-- Complete the circular reference securely for rooms table leaving_player_id
+ALTER TABLE public.rooms ADD CONSTRAINT fk_rooms_leaving_player FOREIGN KEY (leaving_player_id) REFERENCES public.players(id) ON DELETE SET NULL;
+
 -- 4. Stocks: Market securities unique to each room
--- Top 7 Indian Companies will be populated here
 CREATE TABLE public.stocks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     room_id UUID REFERENCES public.rooms(id) ON DELETE CASCADE,
@@ -83,15 +101,31 @@ CREATE TABLE public.room_cards (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 7. Room_Votes: System to handle player leave votes
+CREATE TABLE public.room_votes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID REFERENCES public.rooms(id) ON DELETE CASCADE,
+    leaving_player_id UUID REFERENCES public.players(id) ON DELETE CASCADE,
+    voter_id UUID REFERENCES public.players(id) ON DELETE CASCADE,
+    vote TEXT NOT NULL CHECK (vote IN ('distribute', 'discard')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(room_id, leaving_player_id, voter_id)
+);
+
 -- ==========================================
 -- RLS POLICIES (Simplified for Development)
 -- ==========================================
+ALTER TABLE public.game_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stocks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.portfolios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.room_cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.room_votes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow All Access" ON public.game_users;
+CREATE POLICY "Allow All Access" ON public.game_users FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow All Access" ON public.profiles;
 CREATE POLICY "Allow All Access" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
@@ -110,3 +144,6 @@ CREATE POLICY "Allow All Access" ON public.portfolios FOR ALL USING (true) WITH 
 
 DROP POLICY IF EXISTS "Allow All Access" ON public.room_cards;
 CREATE POLICY "Allow All Access" ON public.room_cards FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow All Access" ON public.room_votes;
+CREATE POLICY "Allow All Access" ON public.room_votes FOR ALL USING (true) WITH CHECK (true);

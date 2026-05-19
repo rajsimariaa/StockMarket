@@ -1,13 +1,13 @@
 // Board Layout and Game Content Configuration
 
 const COMPANIES = [
-    { name: 'RELIANCE IND', symbol: 'RELIANCE', color: '#6366f1', sector: 'Energy', basePrice: 2400 },
-    { name: 'TCS', symbol: 'TCS', color: '#3b82f6', sector: 'IT', basePrice: 3800 },
-    { name: 'HDFC BANK', symbol: 'HDFCBANK', color: '#f59e0b', sector: 'Finance', basePrice: 1600 },
-    { name: 'INFOSYS', symbol: 'INFY', color: '#10b981', sector: 'IT', basePrice: 1500 },
-    { name: 'ICICI BANK', symbol: 'ICICIBANK', color: '#ec4899', sector: 'Finance', basePrice: 1000 },
-    { name: 'SBI', symbol: 'SBIN', color: '#0ea5e9', sector: 'Banking', basePrice: 600 },
-    { name: 'BHARTI AIRTEL', symbol: 'BHARTIARTL', color: '#8b5cf6', sector: 'Telecom', basePrice: 1200 }
+    { name: 'RELIANCE IND', symbol: 'RELIANCE', color: '#dfb841', sector: 'Energy', basePrice: 2400 },
+    { name: 'TCS', symbol: 'TCS', color: '#c5a059', sector: 'IT', basePrice: 3800 },
+    { name: 'HDFC BANK', symbol: 'HDFCBANK', color: '#f3e5ab', sector: 'Finance', basePrice: 1600 },
+    { name: 'INFOSYS', symbol: 'INFY', color: '#cfd2d6', sector: 'IT', basePrice: 1500 },
+    { name: 'ICICI BANK', symbol: 'ICICIBANK', color: '#b87333', sector: 'Finance', basePrice: 1000 },
+    { name: 'SBI', symbol: 'SBIN', color: '#d4af37', sector: 'Banking', basePrice: 600 },
+    { name: 'BHARTI AIRTEL', symbol: 'BHARTIARTL', color: '#aa7c11', sector: 'Telecom', basePrice: 1200 }
 ];
 
 const BOARD_TILE_TYPES = {

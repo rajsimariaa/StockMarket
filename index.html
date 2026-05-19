@@ -14,12 +14,12 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#6366f1',
-                        secondary: '#4f46e5',
-                        accent: '#f59e0b',
-                        dark: '#0f172a',
-                        bull: '#10b981',
-                        bear: '#ef4444',
+                        primary: '#cda142',
+                        secondary: '#f5e4bd',
+                        accent: '#9f7626',
+                        dark: '#050507',
+                        bull: '#f3af2c',
+                        bear: '#7a7364',
                     },
                     fontFamily: {
                         sans: ['Outfit', 'sans-serif'],
@@ -37,19 +37,14 @@
                     }
                 }
             }
-        }
+        };
     </script>
     <style>
-        /* Mobile Responsiveness */
+        /* Compact inline responsive styles */
         @media screen and (max-width: 768px) {
-            .modal-content {
-                padding: 24px !important;
-                max-width: 95vw !important;
-                border-radius: 32px !important;
-            }
-            .text-4xl { font-size: 32px !important; }
-            .text-3xl { font-size: 24px !important; }
-            .text-2xl { font-size: 20px !important; }
+            .text-4xl { font-size: 28px !important; }
+            .text-3xl { font-size: 22px !important; }
+            .text-2xl { font-size: 18px !important; }
         }
     </style>
 </head>
@@ -97,7 +92,7 @@
                     <div id="user-avatar" class="w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center font-bold text-2xl shadow-lg">R</div>
                     <div>
                         <p class="text-xs text-white/40 font-bold uppercase tracking-widest">Player Profile</p>
-                        <p id="display-name" class="text-lg font-bold">Raj Simaria</p>
+                        <p id="display-name" class="text-lg font-bold">Player Name</p>
                     </div>
                 </div>
                 <button id="logout-btn" class="w-12 h-12 bg-white/5 hover:bg-bear/20 hover:text-bear rounded-2xl transition-all flex items-center justify-center border border-white/5">
@@ -114,7 +109,7 @@
                         <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     </div>
                     <h3 class="text-2xl font-bold mb-2">Create New Game</h3>
-                    <p class="text-white/40 max-w-[200px]">Host a virtual room and invite your friends</p>
+                    <p class="text-white/40 max-w-[200px]">Host a virtual room and customize game rounds</p>
                 </button>
 
                 <div class="bg-primary/10 border border-primary/20 p-6 md:p-8 rounded-[2rem] backdrop-blur-md">
@@ -156,14 +151,14 @@
             </div>
 
             <div class="space-y-4">
-            <div class="flex flex-col md:flex-row gap-3 md:gap-4">
-                <button id="start-game-btn" class="hidden flex-[2] bg-bull hover:bg-emerald-600 text-white font-black py-4 md:py-5 rounded-2xl shadow-xl shadow-bull/20 transition-all active:scale-95 disabled:opacity-50 text-lg md:text-xl tracking-wider">
-                    START MATCH
-                </button>
-                <button id="leave-room-btn" class="flex-1 bg-white/5 hover:bg-white/10 text-white/40 font-bold py-4 md:py-5 rounded-2xl border border-white/5 transition-all text-sm uppercase tracking-widest">
-                    LEAVE
-                </button>
-            </div>
+                <div class="flex flex-col md:flex-row gap-3 md:gap-4">
+                    <button id="start-game-btn" class="hidden flex-[2] bg-bull hover:bg-emerald-600 text-white font-black py-4 md:py-5 rounded-2xl shadow-xl shadow-bull/20 transition-all active:scale-95 disabled:opacity-50 text-lg md:text-xl tracking-wider">
+                        START MATCH
+                    </button>
+                    <button id="leave-room-btn" class="flex-1 bg-white/5 hover:bg-white/10 text-white/40 font-bold py-4 md:py-5 rounded-2xl border border-white/5 transition-all text-sm uppercase tracking-widest">
+                        LEAVE
+                    </button>
+                </div>
                 <div id="waiting-msg-container" class="flex items-center justify-center gap-3 text-white/40">
                     <div class="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
                     <div class="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></div>
@@ -212,7 +207,7 @@
                     <div class="w-6 h-6 bg-bull/20 rounded-lg flex items-center justify-center">
                         <svg class="w-4 h-4 text-bull" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path></svg>
                     </div>
-                    <span id="mobile-cash" class="font-black text-base">₹100,000</span>
+                    <span id="mobile-cash" class="font-black text-base">₹10,00,000</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="bg-white/5 backdrop-blur-xl px-3 py-2 rounded-2xl border border-white/10 flex items-center gap-2 shadow-2xl">
@@ -225,34 +220,56 @@
             </div>
 
             <!-- Live Market Focus Area -->
-            <div id="market-focus-area" class="relative w-full max-w-[800px] h-full md:h-auto flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl md:rounded-[3rem] p-5 md:p-8 shadow-[0_0_100px_rgba(0,0,0,0.8)] z-10 overflow-hidden">
+            <div id="market-focus-area" class="relative w-full max-w-[850px] h-full md:h-auto flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl md:rounded-[3rem] p-5 md:p-8 shadow-[0_0_100px_rgba(0,0,0,0.8)] z-10 overflow-hidden">
                 <!-- Header -->
-                <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-8 gap-4 md:gap-0 shrink-0">
-                    <div>
-                        <h2 class="text-2xl md:text-4xl font-black text-white tracking-tighter">STOCK MARKET</h2>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="w-2 h-2 bg-bull rounded-full animate-pulse"></span>
-                            <span id="session-status" class="text-[10px] font-black text-bull uppercase tracking-[0.3em]">Trading Session Open</span>
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-4 md:gap-0 shrink-0">
+                    <div class="flex items-center justify-between md:justify-start w-full md:w-auto">
+                        <div>
+                            <h2 class="text-2xl md:text-4xl font-black text-white tracking-tighter">STOCK MARKET</h2>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="w-2 h-2 bg-bull rounded-full animate-pulse"></span>
+                                <span id="session-status" class="text-[10px] font-black text-bull uppercase tracking-[0.3em]">Trading Session Open</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="bg-white/5 px-4 py-3 md:px-6 md:py-3 rounded-2xl border border-white/5 flex items-center justify-between md:justify-end gap-4 md:gap-6 w-full md:w-auto">
-                        <div class="text-right">
+                    <div class="bg-white/5 px-4 py-3 md:px-6 md:py-3 rounded-2xl border border-white/5 flex items-center justify-between md:justify-end gap-6 w-full md:w-auto">
+                        <div class="text-right border-r border-white/10 pr-4 md:pr-6">
                             <p class="text-[9px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">Active Round</p>
                             <p id="round-display" class="text-xl md:text-2xl font-black text-primary">1 / 3</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[9px] md:text-[10px] font-black text-white/40 uppercase tracking-widest">Sub Round</p>
+                            <p id="sub-round-display" class="text-xl md:text-2xl font-black text-accent">1 / 3</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Market Table -->
-                <div class="flex-1 space-y-3 md:space-y-4 md:max-h-[500px] overflow-y-auto pr-2 md:pr-4 custom-scrollbar" id="central-market-list">
-                    <!-- Stocks will be injected here via JS -->
-                    <div class="flex items-center justify-center h-40 text-white/20 font-bold uppercase tracking-widest text-center text-xs md:text-base">
+                <!-- Market playing cards grid -->
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 overflow-y-auto pr-2 md:pr-4 custom-scrollbar min-h-[350px] max-h-[500px]" id="central-market-list">
+                    <!-- Stock playing cards will be dynamically injected here -->
+                    <div class="flex items-center justify-center h-40 text-white/20 font-bold uppercase tracking-widest text-center text-xs md:text-base col-span-full">
                         Initializing Market Data...
                     </div>
                 </div>
 
+                <!-- Separated Hint Cards Section -->
+                <div class="mt-6 border-t border-white/5 pt-4 shrink-0 flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
+                            <span>My Secret Hint Cards</span>
+                            <span id="hand-count-badge" class="px-2 py-0.5 text-[8px] bg-primary/20 text-primary border border-primary/30 rounded-full font-black">0 Cards</span>
+                        </h3>
+                    </div>
+                    <div id="secret-hints-tray" class="flex gap-4 overflow-x-auto pb-2 pr-2 custom-scrollbar min-h-[140px] select-none items-center">
+                        <!-- Hint playing cards will be dynamically rendered here -->
+                        <div class="text-white/20 text-[10px] uppercase font-bold tracking-widest text-center py-4 w-full">
+                            No secret hints in hand
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Footer Action -->
-                <div class="mt-4 md:mt-10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6 border-t border-white/5 pt-4 md:pt-8 shrink-0">
+                <div class="mt-4 md:mt-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-6 border-t border-white/5 pt-4 md:pt-6 shrink-0">
                     <div class="text-center md:text-left">
                         <p class="text-[9px] md:text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Turn Management</p>
                         <p id="turn-indicator-text" class="text-xs md:text-sm font-bold text-white/80">Waiting for other players...</p>
@@ -287,12 +304,12 @@
             <div class="bg-gradient-to-br from-white/10 to-transparent rounded-[2rem] p-6 border border-white/5 text-center shadow-xl relative overflow-hidden">
                 <div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-2xl"></div>
                 <p class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Total Net Worth</p>
-                <h2 id="net-worth" class="text-4xl font-black text-bull mt-1 tabular-nums">₹100,000</h2>
+                <h2 id="net-worth" class="text-4xl font-black text-bull mt-1 tabular-nums">₹10,00,000</h2>
                 
                 <div class="flex gap-2 mt-6">
                     <div class="flex-1 bg-black/40 p-3 rounded-2xl border border-white/5">
                         <p class="text-[9px] font-bold text-white/30 uppercase tracking-tighter">Available Cash</p>
-                        <p id="cash-value" class="text-sm font-black text-white/90">₹100,000</p>
+                        <p id="cash-value" class="text-sm font-black text-white/90">₹10,00,000</p>
                     </div>
                     <div class="flex-1 bg-black/40 p-3 rounded-2xl border border-white/5">
                         <p class="text-[9px] font-bold text-white/30 uppercase tracking-tighter">Stock Value</p>
@@ -301,17 +318,7 @@
                 </div>
             </div>
             
-            <div class="h-48 bg-white/5 rounded-[2rem] p-4 border border-white/5 flex flex-col overflow-hidden">
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-[10px] font-black text-white/40 uppercase tracking-widest">My Hand (Market Hints)</h3>
-                    <button onclick="submitAllCards()" class="bg-primary hover:bg-secondary text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors shadow-lg shadow-primary/20">Submit All</button>
-                </div>
-                <div id="hand-list" class="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1">
-                    <div class="text-center py-6 opacity-20">
-                        <p class="text-xs font-bold">No Cards Available</p>
-                    </div>
-                </div>
-            </div>
+
 
             <div class="flex-1 bg-white/5 rounded-[2rem] p-5 border border-white/5 flex flex-col overflow-hidden">
                 <h3 class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4">My Portfolio</h3>
@@ -401,6 +408,142 @@
         </div>
     </div>
 
+    <!-- Create Room Settings Modal (Rounds Selector) -->
+    <div id="create-room-modal" class="hidden fixed inset-0 z-50 bg-dark/90 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="modal-content w-full max-w-md bg-[#16161a] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="text-2xl font-black tracking-tight">Host Game Room</h3>
+                    <p class="text-white/40 text-xs mt-1 uppercase tracking-widest font-semibold">Customize Game Rules</p>
+                </div>
+                <button id="close-create-modal" class="w-10 h-10 bg-white/5 hover:bg-white/10 rounded-full flex items-center justify-center transition-all">
+                    <svg class="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-white/40 uppercase mb-3 tracking-wider">Number of Rounds</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="round-option-btn py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 font-black text-sm transition-all focus:outline-none focus:border-primary active:scale-95" data-rounds="3">3</button>
+                        <button class="round-option-btn py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 font-black text-sm transition-all focus:outline-none focus:border-primary active:scale-95" data-rounds="5">5</button>
+                        <button class="round-option-btn py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 font-black text-sm transition-all focus:outline-none focus:border-primary active:scale-95" data-rounds="8">8</button>
+                        <button class="round-option-btn py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 font-black text-sm transition-all focus:outline-none focus:border-primary active:scale-95" data-rounds="10">10</button>
+                    </div>
+                    <p class="text-[10px] text-white/30 mt-2">*Note: 3 sub-rounds are played per round before prices fluctuate.</p>
+                </div>
+                
+                <button id="confirm-create-room-btn" class="w-full bg-primary hover:bg-secondary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95">
+                    CREATE ROOM
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave Match Confirmation Modal (Wizard Style) -->
+    <div id="leave-confirm-modal" class="hidden fixed inset-0 z-[80] bg-dark/95 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-[#16161a] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden text-center">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-bear/10 rounded-full blur-3xl"></div>
+            <div class="w-20 h-20 bg-bear/20 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-bear/30">
+                <svg class="w-10 h-10 text-bear animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <h3 class="text-2xl font-black text-white mb-2 tracking-tight">Abandon Match?</h3>
+            <p class="text-white/60 text-sm leading-relaxed mb-6">
+                Are you sure you want to leave the game session? Other players will vote to either <span class="text-bull font-bold">distribute</span> or <span class="text-bear font-bold">discard</span> your total accumulated net worth!
+            </p>
+            
+            <div class="flex flex-col gap-3">
+                <button id="confirm-abandon-btn" class="w-full bg-bear hover:bg-rose-600 text-white font-black py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-bear/20 uppercase tracking-wider">
+                    Abandon Match
+                </button>
+                <button id="cancel-abandon-btn" class="w-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white font-bold py-4 rounded-2xl transition-all active:scale-95 border border-white/5">
+                    Return to Game
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaving Player Voting Modal -->
+    <div id="vote-modal" class="hidden fixed inset-0 z-[70] bg-dark/95 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-[#16161a] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden text-center">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-bear/10 rounded-full blur-3xl"></div>
+            <div class="w-20 h-20 bg-bear/20 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-bear/30">
+                <svg class="w-10 h-10 text-bear animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <h3 id="vote-title" class="text-2xl font-black text-white mb-2 tracking-tight">Player Leaving Game!</h3>
+            <p id="vote-description" class="text-white/60 text-sm leading-relaxed mb-6">
+                <span id="leaving-player-name" class="text-primary font-bold">Player</span> is leaving the game. Vote on whether their wealth will be distributed or discarded!
+            </p>
+            
+            <div class="bg-black/40 p-4 rounded-2xl border border-white/5 mb-6 text-left">
+                <p class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Vote Status (75% Majority Required)</p>
+                <div class="flex items-center justify-between text-xs font-bold text-white/80">
+                    <span>Distribute: <span id="vote-dist-count" class="text-bull">0</span></span>
+                    <span>Discard: <span id="vote-disc-count" class="text-bear">0</span></span>
+                    <span>Total Cast: <span id="vote-total-cast" class="text-primary">0</span>/<span id="vote-total-voters" class="text-white">0</span></span>
+                </div>
+                <!-- Progress Bar -->
+                <div class="w-full bg-white/5 h-2 rounded-full mt-3 overflow-hidden flex">
+                    <div id="vote-dist-progress" class="bg-bull h-full" style="width: 0%"></div>
+                    <div id="vote-disc-progress" class="bg-bear h-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button id="vote-distribute-btn" class="flex-1 bg-bull hover:bg-emerald-600 text-white font-black py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-bull/20">
+                    DISTRIBUTE
+                </button>
+                <button id="vote-discard-btn" class="flex-1 bg-bear hover:bg-rose-600 text-white font-black py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-bear/20">
+                    DISCARD
+                </button>
+            </div>
+            <p id="vote-voted-msg" class="hidden text-xs text-white/40 font-bold mt-4 animate-pulse">Your vote has been cast. Waiting for remaining players...</p>
+        </div>
+    </div>
+
+    <!-- Host Continue/Stop Choice Modal -->
+    <div id="host-continue-modal" class="hidden fixed inset-0 z-[70] bg-dark/95 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-[#16161a] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden text-center">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+            <div class="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-primary">
+                <svg class="w-10 h-10 text-primary animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h3 class="text-2xl font-black text-white mb-2 tracking-tight">Round Limit Reached!</h3>
+            <p id="host-continue-msg" class="text-white/60 text-sm leading-relaxed mb-6">
+                All rounds are completed. As the Host, choose whether to continue playing (extend by one round) or stop the match and calculate final scores.
+            </p>
+            
+            <div class="flex flex-col gap-3">
+                <button id="host-continue-play-btn" class="w-full bg-bull hover:bg-emerald-600 text-white font-black py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-bull/20 uppercase tracking-wider">
+                    Continue Playing
+                </button>
+                <button id="host-stop-play-btn" class="w-full bg-bear hover:bg-rose-600 text-white font-black py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-bear/20 uppercase tracking-wider">
+                    Stop & Finish
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Non-Host Waiting Modal -->
+    <div id="player-waiting-continue-modal" class="hidden fixed inset-0 z-[70] bg-dark/95 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-[#16161a] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden text-center">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+            <div class="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-primary">
+                <svg class="w-10 h-10 text-primary animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h3 class="text-2xl font-black text-white mb-2 tracking-tight">Round Limit Reached!</h3>
+            <p class="text-white/60 text-sm leading-relaxed mb-6">
+                All rounds are completed. Waiting for the Host to decide whether to continue playing or finish the match...
+            </p>
+            <div class="flex items-center justify-center gap-3 text-white/40">
+                <div class="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                <div class="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                <div class="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Mobile Overlays (Panels) -->
     <div id="mobile-market-panel" class="hidden fixed inset-0 z-50 bg-dark flex flex-col pt-16 p-6">
         <button class="close-mobile-panel absolute top-6 right-6 w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">
@@ -415,12 +558,17 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
         <h2 class="text-3xl font-black mb-6">My Assets & Cards</h2>
-        
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-[10px] font-black text-white/40 uppercase tracking-widest">My Hand (Market Hints)</h3>
-            <button onclick="submitAllCards()" class="bg-primary hover:bg-secondary text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors shadow-lg shadow-primary/20">Submit All</button>
+        <!-- Mobile Secret Hint Cards -->
+        <h3 class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-3 flex justify-between items-center">
+            <span>My Secret Hint Cards</span>
+            <span id="mobile-hand-count-badge" class="px-2 py-0.5 text-[8px] bg-primary/20 text-primary border border-primary/30 rounded-full font-black">0 Cards</span>
+        </h3>
+        <div id="mobile-secret-hints-tray" class="flex gap-3 overflow-x-auto pb-4 mb-6 select-none shrink-0">
+            <!-- Mobile hint cards will be dynamically rendered here -->
+            <div class="text-white/20 text-[10px] uppercase font-bold tracking-widest text-center py-4 w-full">
+                No secret hints
+            </div>
         </div>
-        <div id="mobile-hand-list" class="space-y-2 mb-6"></div>
 
         <h3 class="text-[10px] font-black text-white/40 uppercase tracking-widest mb-3">My Portfolio</h3>
         <div id="mobile-portfolio-list" class="space-y-3 overflow-y-auto flex-1 pb-10"></div>

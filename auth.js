@@ -87,7 +87,19 @@ async function handleAuth() {
 
 async function ensureProfileExists(id, username) {
     // This function guarantees that the profiles table has a record for this user
-    await sb.from('profiles').upsert([{ id, username }], { onConflict: 'id' });
+    const { error } = await sb.from('profiles').upsert([{ id, username }], { onConflict: 'id' });
+    if (error) {
+        console.error('ensureProfileExists error:', error);
+        if (error.code === '23503') {
+            // Stale user token in local storage from a reset database
+            localStorage.removeItem('game_user');
+            showToast('Stale session detected (database reset). Refreshing...', 'error');
+            setTimeout(() => location.reload(), 1500);
+            throw error;
+        }
+        showToast(`Profile sync failed: ${error.message}`, 'error');
+        throw error;
+    }
 }
 
 function saveAndAuth(user) {
