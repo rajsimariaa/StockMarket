@@ -969,7 +969,8 @@ async function refreshActiveGameUI() {
         player_id: p.player_id,
         username: p.players ? p.players.username : "Player",
         cash: parseFloat(p.cash),
-        loan_amount: parseFloat(p.loan_amount)
+        loan_amount: parseFloat(p.loan_amount),
+        loan_taken_round: parseInt(p.loan_taken_round || 0)
       }));
     }
   } catch (err) {
@@ -1528,30 +1529,187 @@ async function executeOfficerDiscard(dbCardId, role) {
 // ==========================================================
 // 14. ADVANCED LOANS & MORTGAGES SYSTEMS
 // ==========================================================
-async function handleTakeLoan() {
-  const meState = gameState.players.find(p => p.player_id === gameState.me.id);
+function handleTakeLoan() {
+  openLoanModal();
+}
 
-  if (meState.loan_amount >= 1000000) {
-    triggerToast("Loan Limit Exceeded", "Maximum leverage allowed is Rs. 10 Lakh.", true);
+let activeLoanModalTenure = 1;
+
+function openLoanModal() {
+  const meState = gameState.players.find(p => p.player_id === gameState.me.id);
+  const outstandingDebt = meState ? (meState.loan_amount || 0) : 0;
+  const remainingCapacity = Math.max(0, 1000000 - outstandingDebt);
+
+  // Set active debt & remaining capacity
+  const activeDebtEl = document.getElementById("loan-modal-active-debt");
+  const remainingLimitEl = document.getElementById("loan-modal-remaining-limit");
+  if (activeDebtEl) activeDebtEl.textContent = `Rs. ${outstandingDebt.toLocaleString()}`;
+  if (remainingLimitEl) remainingLimitEl.textContent = `Rs. ${remainingCapacity.toLocaleString()}`;
+
+  // Reset/Set initial inputs
+  const qtyInput = document.getElementById("loan-modal-qty");
+  if (qtyInput) {
+    qtyInput.value = Math.min(200000, remainingCapacity);
+    qtyInput.max = remainingCapacity;
+  }
+
+  // Set default tenure to 1 round
+  selectLoanTenure(1);
+
+  // Show modal
+  const modal = document.getElementById("loan-popup-modal");
+  if (modal) modal.classList.remove("hidden");
+
+  // Calculate initial estimates
+  updateLoanEstimation();
+}
+
+function closeLoanModal() {
+  const modal = document.getElementById("loan-popup-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function adjustLoanAmount(delta) {
+  const qtyInput = document.getElementById("loan-modal-qty");
+  if (!qtyInput) return;
+
+  const meState = gameState.players.find(p => p.player_id === gameState.me.id);
+  const outstandingDebt = meState ? (meState.loan_amount || 0) : 0;
+  const remainingCapacity = Math.max(0, 1000000 - outstandingDebt);
+
+  let amount = parseInt(qtyInput.value) || 0;
+  amount += delta;
+
+  if (amount < 50000) amount = 50000;
+  if (amount > remainingCapacity) amount = remainingCapacity;
+
+  qtyInput.value = amount;
+  updateLoanEstimation();
+}
+
+function setLoanPreset(preset) {
+  const qtyInput = document.getElementById("loan-modal-qty");
+  if (!qtyInput) return;
+
+  const meState = gameState.players.find(p => p.player_id === gameState.me.id);
+  const outstandingDebt = meState ? (meState.loan_amount || 0) : 0;
+  const remainingCapacity = Math.max(0, 1000000 - outstandingDebt);
+
+  if (preset === 'MAX') {
+    qtyInput.value = remainingCapacity;
+  } else {
+    let val = parseInt(preset) || 200000;
+    if (val > remainingCapacity) val = remainingCapacity;
+    if (val < 50000) val = 50000;
+    qtyInput.value = val;
+  }
+  updateLoanEstimation();
+}
+
+function selectLoanTenure(rounds) {
+  activeLoanModalTenure = rounds;
+
+  // Toggle active button style
+  for (let r = 1; r <= 4; r++) {
+    const pill = document.getElementById(`tenure-pill-${r}`);
+    if (pill) {
+      if (r === rounds) {
+        pill.className = "py-2 text-[10px] rounded-lg font-bold border transition duration-200 bg-amber-600 border-amber-600 text-white shadow-sm";
+      } else {
+        pill.className = "py-2 text-[10px] rounded-lg font-bold border transition duration-200 bg-white border-slate-200 hover:border-slate-300 text-slate-600";
+      }
+    }
+  }
+
+  updateLoanEstimation();
+}
+
+function updateLoanEstimation() {
+  const qtyInput = document.getElementById("loan-modal-qty");
+  if (!qtyInput) return;
+
+  let amount = parseInt(qtyInput.value) || 0;
+  if (amount < 0) amount = 0;
+
+  const meState = gameState.players.find(p => p.player_id === gameState.me.id);
+  const outstandingDebt = meState ? (meState.loan_amount || 0) : 0;
+  const remainingCapacity = Math.max(0, 1000000 - outstandingDebt);
+
+  // Math calculation
+  const interestRate = 0.12 * activeLoanModalTenure;
+  const interestAmount = amount * interestRate;
+  const totalRepayment = amount + interestAmount;
+
+  // Update elements
+  const principalEl = document.getElementById("loan-est-principal");
+  const rateEl = document.getElementById("loan-est-rate");
+  const interestEl = document.getElementById("loan-est-interest");
+  const repayEl = document.getElementById("loan-est-repay");
+
+  if (principalEl) principalEl.textContent = `Rs. ${amount.toLocaleString()}`;
+  if (rateEl) rateEl.textContent = `${activeLoanModalTenure} Round${activeLoanModalTenure > 1 ? 's' : ''} @ 12% (${(interestRate * 100).toFixed(0)}%)`;
+  if (interestEl) interestEl.textContent = `Rs. ${interestAmount.toLocaleString()}`;
+  if (repayEl) repayEl.textContent = `Rs. ${totalRepayment.toLocaleString()}`;
+
+  // Update status messages
+  const statusEl = document.getElementById("loan-modal-status-text");
+  const actionBtn = document.getElementById("btn-modal-action-loan");
+  if (statusEl && actionBtn) {
+    if (amount > remainingCapacity) {
+      statusEl.innerHTML = `<span class="text-rose-500 font-bold">⚠️ Exceeds remaining credit capacity of Rs. ${remainingCapacity.toLocaleString()}</span>`;
+      actionBtn.disabled = true;
+      actionBtn.classList.add("opacity-50", "cursor-not-allowed");
+    } else if (amount === 0) {
+      statusEl.innerHTML = `<span class="text-slate-400 font-medium">Enter a positive amount to borrow</span>`;
+      actionBtn.disabled = true;
+      actionBtn.classList.add("opacity-50", "cursor-not-allowed");
+    } else {
+      statusEl.innerHTML = `<span class="text-emerald-600 font-medium">✓ Disbursal Pre-Approved (Immediate Disbursal: +Rs. ${amount.toLocaleString()})</span>`;
+      actionBtn.disabled = false;
+      actionBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    }
+  }
+}
+
+async function submitLoanApplication() {
+  const qtyInput = document.getElementById("loan-modal-qty");
+  if (!qtyInput) return;
+
+  const amount = parseInt(qtyInput.value) || 0;
+  if (amount <= 0) {
+    triggerToast("Invalid Amount", "Please enter a valid borrowing amount.", true);
+    return;
+  }
+
+  const meState = gameState.players.find(p => p.player_id === gameState.me.id);
+  const currentDebt = meState ? (meState.loan_amount || 0) : 0;
+
+  if (currentDebt + amount > 1000000) {
+    triggerToast("Loan Limit Exceeded", "Maximum cumulative leverage allowed is Rs. 10 Lakh.", true);
     return;
   }
 
   try {
+    // 1. Update room_players details
     const { error: playerUpErr } = await supabase.from('room_players').update({
-      cash: meState.cash + 500000,
-      loan_amount: meState.loan_amount + 500000
+      cash: meState.cash + amount,
+      loan_amount: meState.loan_amount + amount,
+      loan_taken_round: activeLoanModalTenure
     }).eq('room_id', gameState.room.id).eq('player_id', gameState.me.id);
+    
     if (playerUpErr) throw playerUpErr;
 
+    // 2. Insert TAKE_LOAN transaction
     const { error: txErr } = await supabase.from('transactions').insert({
       room_id: gameState.room.id,
       player_id: gameState.me.id,
       transaction_type: 'TAKE_LOAN',
-      total_amount: 500000
+      total_amount: amount
     });
     if (txErr) throw txErr;
 
-    triggerToast("Leverage Success", "Loan disbursed directly from bank.");
+    triggerToast("Leverage Success", `Rs. ${amount.toLocaleString()} disbursed directly from bank with ${activeLoanModalTenure} Round tenure.`);
+    closeLoanModal();
   } catch (err) {
     console.error("Loan disbursal failed:", err);
     triggerToast("Loan Disbursal Failed", err.message, true);
@@ -1609,10 +1767,11 @@ async function handleMortgageAssets(coId) {
 
 async function settleAllDebts() {
   const meState = gameState.players.find(p => p.player_id === gameState.me.id);
-  const debtTotal = meState.loan_amount * 1.12; // 12% Interest rate
+  const interestRate = meState.loan_taken_round > 0 ? (0.12 * meState.loan_taken_round) : 0.12;
+  const debtTotal = meState.loan_amount * (1 + interestRate);
 
   if (meState.cash < debtTotal) {
-    triggerToast("Insufficient Capital", "You do not have enough cash to settle your loans + 12% interest.", true);
+    triggerToast("Insufficient Capital", `You do not have enough cash to settle your loans + ${(interestRate * 100).toFixed(0)}% interest.`, true);
     return;
   }
 
@@ -1700,7 +1859,8 @@ async function triggerRoundEndTransition() {
 
     if (gameState.room.loan_mortgage_enabled && meState && meState.loan_amount > 0) {
       loanSection.classList.remove("hidden");
-      document.getElementById("settlement-loan-amount").textContent = `Rs. ${(meState.loan_amount * 1.12).toLocaleString()}`;
+      const interestRate = meState.loan_taken_round > 0 ? (0.12 * meState.loan_taken_round) : 0.12;
+      document.getElementById("settlement-loan-amount").textContent = `Rs. ${(meState.loan_amount * (1 + interestRate)).toLocaleString()}`;
 
       let mortgageSum = 0;
       gameState.companies.forEach(c => {
@@ -1738,7 +1898,8 @@ async function closeSettlementModal(forcedLiquidation = false) {
 
     // Auto-liquidation logic execution
     if (forcedLiquidation && meState && meState.loan_amount > 0) {
-      const debtTotal = meState.loan_amount * 1.12;
+      const interestRate = meState.loan_taken_round > 0 ? (0.12 * meState.loan_taken_round) : 0.12;
+      const debtTotal = meState.loan_amount * (1 + interestRate);
 
       // Liquidate mortgaged shares
       let totalLiquidationValue = 0;

@@ -535,9 +535,9 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-2.5">
-              <button onclick="handleTakeLoan()" id="btn-loan"
+              <button onclick="openLoanModal()" id="btn-loan"
                 class="flex-grow bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-hand-holding-dollar"></i> Borrow Rs. 5 Lakh
+                <i class="fa-solid fa-hand-holding-dollar"></i> Borrow / Bank Leverage
               </button>
             </div>
           </div>
@@ -766,6 +766,131 @@
             <i class="fa-solid fa-shield-halved"></i> Cover Short
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Premium Bank Loan Application Modal -->
+  <div id="loan-popup-modal"
+    class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
+    <div
+      class="bg-white rounded-2xl border border-slate-100 max-w-md w-full p-6 shadow-2xl relative overflow-hidden flex flex-col transition-all transform scale-100 duration-300">
+      <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-500 to-yellow-500"></div>
+
+      <!-- Close top-right button -->
+      <button onclick="closeLoanModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-all">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="flex items-center gap-3.5 mb-4">
+        <div class="bg-amber-50 text-amber-600 p-3 rounded-xl shadow-inner">
+          <i class="fa-solid fa-hand-holding-dollar text-xl text-amber-500"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-black text-slate-950 uppercase tracking-wide">Bank Credit Facility</h3>
+          <p class="text-xs text-slate-400 font-semibold">Request leverage or business liquidity</p>
+        </div>
+      </div>
+
+      <!-- Outstanding & Limits Grid -->
+      <div class="grid grid-cols-2 gap-3 mb-4 text-xs">
+        <div class="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+          <span class="text-slate-500 block font-semibold mb-0.5">Active Outstanding Debt</span>
+          <strong id="loan-modal-active-debt" class="text-rose-600 text-sm font-black">Rs. 0</strong>
+        </div>
+        <div class="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+          <span class="text-slate-500 block font-semibold mb-0.5">Remaining Capacity</span>
+          <strong id="loan-modal-remaining-limit" class="text-emerald-600 text-sm font-black">Rs. 1,000,000</strong>
+        </div>
+      </div>
+
+      <!-- Amount Selector Block -->
+      <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-4">
+        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 text-center">Amount to Borrow (Rs.)</label>
+        
+        <div class="flex items-center justify-between gap-2 max-w-[300px] mx-auto mb-3">
+          <button onclick="adjustLoanAmount(-50000)" class="w-10 h-10 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition flex items-center justify-center text-xs shadow-sm" title="Subtract 50k">
+            -50k
+          </button>
+          <button onclick="adjustLoanAmount(-10000)" class="w-8 h-8 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition flex items-center justify-center text-xs shadow-sm" title="Subtract 10k">
+            -10k
+          </button>
+          
+          <input type="number" id="loan-modal-qty" value="200000" min="50000" step="10000" oninput="updateLoanEstimation()"
+            class="w-28 text-center font-extrabold text-lg text-slate-900 border-b-2 border-slate-200 focus:border-amber-500 bg-transparent outline-none py-1">
+          
+          <button onclick="adjustLoanAmount(10000)" class="w-8 h-8 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition flex items-center justify-center text-xs shadow-sm" title="Add 10k">
+            +10k
+          </button>
+          <button onclick="adjustLoanAmount(50000)" class="w-10 h-10 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition flex items-center justify-center text-xs shadow-sm" title="Add 50k">
+            +50k
+          </button>
+        </div>
+
+        <!-- Quick Presets Pills -->
+        <div class="flex justify-center gap-1.5 flex-wrap">
+          <button onclick="setLoanPreset(100000)" class="px-2.5 py-1 text-[10px] bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded-md font-bold text-slate-600 transition shadow-xs">
+            1L
+          </button>
+          <button onclick="setLoanPreset(200000)" class="px-2.5 py-1 text-[10px] bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded-md font-bold text-slate-600 transition shadow-xs">
+            2L
+          </button>
+          <button onclick="setLoanPreset(500000)" class="px-2.5 py-1 text-[10px] bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded-md font-bold text-slate-600 transition shadow-xs">
+            5L
+          </button>
+          <button onclick="setLoanPreset('MAX')" class="px-2.5 py-1 text-[10px] bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-md font-bold text-amber-700 transition shadow-xs">
+            Max Limit
+          </button>
+        </div>
+      </div>
+
+      <!-- Tenure Selector Block -->
+      <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-4">
+        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 text-center">Select Loan Tenure</label>
+        <div class="grid grid-cols-4 gap-1.5" id="loan-tenure-pills">
+          <button onclick="selectLoanTenure(1)" id="tenure-pill-1" class="py-2 text-[10px] rounded-lg font-bold border transition duration-200 bg-amber-600 border-amber-600 text-white shadow-sm">
+            1 Round<br><span class="opacity-80">12% Int</span>
+          </button>
+          <button onclick="selectLoanTenure(2)" id="tenure-pill-2" class="py-2 text-[10px] rounded-lg font-bold border transition duration-200 bg-white border-slate-200 hover:border-slate-300 text-slate-600">
+            2 Rounds<br><span class="opacity-80">24% Int</span>
+          </button>
+          <button onclick="selectLoanTenure(3)" id="tenure-pill-3" class="py-2 text-[10px] rounded-lg font-bold border transition duration-200 bg-white border-slate-200 hover:border-slate-300 text-slate-600">
+            3 Rounds<br><span class="opacity-80">36% Int</span>
+          </button>
+          <button onclick="selectLoanTenure(4)" id="tenure-pill-4" class="py-2 text-[10px] rounded-lg font-bold border transition duration-200 bg-white border-slate-200 hover:border-slate-300 text-slate-600">
+            4 Rounds<br><span class="opacity-80">48% Int</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Calculation Estimation Box -->
+      <div id="loan-modal-estimation-box" class="bg-amber-50/50 border border-amber-100/50 rounded-xl p-3 mb-4 text-xs space-y-1">
+        <div class="flex justify-between items-center text-slate-500">
+          <span>Requested Principal:</span>
+          <strong id="loan-est-principal" class="text-slate-800 font-bold">Rs. 200,000</strong>
+        </div>
+        <div class="flex justify-between items-center text-slate-500">
+          <span>Tenure & Interest rate:</span>
+          <strong id="loan-est-rate" class="text-slate-800 font-bold">1 Round @ 12% (12%)</strong>
+        </div>
+        <div class="flex justify-between items-center text-slate-500 border-b border-slate-200/50 pb-1 mb-1">
+          <span>Interest Amount:</span>
+          <strong id="loan-est-interest" class="text-rose-600 font-bold">Rs. 24,000</strong>
+        </div>
+        <div class="flex justify-between items-center text-sm font-bold text-slate-800">
+          <span>Total Repayment Due:</span>
+          <strong id="loan-est-repay" class="text-slate-950 font-black text-sm">Rs. 224,000</strong>
+        </div>
+        <div id="loan-modal-status-text" class="text-[10px] text-center text-slate-400 font-semibold pt-1"></div>
+      </div>
+
+      <!-- Action Panel Buttons -->
+      <div class="space-y-2">
+        <button id="btn-modal-action-loan" onclick="submitLoanApplication()"
+          class="w-full bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-3 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 text-xs sm:text-sm">
+          <i class="fa-solid fa-hand-holding-dollar"></i> Confirm & Disburse Loan
+        </button>
       </div>
     </div>
   </div>
