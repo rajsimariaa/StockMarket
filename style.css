@@ -1,0 +1,61 @@
+/* Professional Card jagged Ticket Border Style */
+.ticket-card {
+  position: relative;
+  background: white;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ticket-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.ticket-jagged {
+  background-image: radial-gradient(circle at 100% 50%, transparent 6px, #ffffff 6px);
+  background-size: 100% 16px;
+  background-position: left;
+}
+
+.ticket-jagged-right {
+  background-image: radial-gradient(circle at 0% 50%, transparent 6px, #ffffff 6px);
+  background-size: 100% 16px;
+  background-position: right;
+}
+
+/* Jagged edge for bottom of ticket */
+.jagged-bottom::after {
+  content: "";
+  display: block;
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  background-image: linear-gradient(-45deg, white 6px, transparent 0), linear-gradient(45deg, white 6px, transparent 0);
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  background-size: 12px 12px;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

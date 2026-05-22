@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏆 Stock Market Board Game (SMBG)</title>
+  <!-- Google Fonts: Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome for Premium Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            smbgBlue: {
+              50: '#f0f4f8',
+              100: '#dbe3ed',
+              600: '#1d4ed8',
+              900: '#0f172a',
+              950: '#030712'
+            },
+            smbgGreen: {
+              500: '#10b981',
+              600: '#059669',
+            },
+            smbgRed: {
+              500: '#ef4444',
+              600: '#dc2626',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- ============================================================================
+       🔑 SUPABASE PROJECT CONFIGURATION
+       ============================================================================ -->
+  <script src="config.js"></script>
+
+  <!-- ============================================================================
+       🌐 DYNAMIC INTERFACE ROOT
+       ============================================================================ -->
+  <header class="bg-smbgBlue-950 text-white px-4 py-3 md:px-8 shadow-md z-30 sticky top-0">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-tr from-blue-600 to-indigo-500 p-2 rounded-lg text-white shadow">
+          <i class="fa-solid fa-chart-line text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">SMBG <span class="text-blue-400 font-medium">Pro</span></h1>
+          <p class="text-xs text-slate-400">Stock Market Board Game</p>
+        </div>
+      </div>
+
+      <!-- Connection Mode Indicator -->
+      <div class="flex items-center gap-4 text-sm">
+        <span id="connection-badge"
+          class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+          <i class="fa-solid fa-circle-nodes mr-1.5 animate-pulse"></i> Initializing DB
+        </span>
+        <div id="user-profile-widget" class="hidden flex items-center gap-2">
+          <div class="text-right">
+            <p id="header-username" class="font-semibold text-slate-200 text-xs sm:text-sm">User</p>
+            <p id="header-networth" class="text-emerald-400 font-bold text-xs">Rs. 1,000,000</p>
+          </div>
+          <button onclick="handleLogout()" class="text-slate-400 hover:text-rose-400 transition-colors p-1"
+            title="Sign Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Persistent Error / RLS Banner -->
+  <div id="persistent-error-banner" class="hidden bg-rose-950/95 text-white px-4 py-3 md:px-8 border-b border-rose-800 backdrop-blur-sm z-50 sticky top-[72px] shadow-lg animate-fade-in">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-start gap-3">
+        <div class="bg-rose-500/20 text-rose-400 p-2 rounded-lg border border-rose-500/30 mt-0.5">
+          <i class="fa-solid fa-triangle-exclamation text-lg animate-pulse"></i>
+        </div>
+        <div>
+          <h4 class="font-extrabold text-sm tracking-tight text-white flex items-center gap-1.5">
+            Profile Verification Failed (Row-Level Security Active)
+          </h4>
+          <p class="text-xs text-rose-200 mt-1 max-w-4xl leading-relaxed">
+            Row-Level Security (RLS) is active on your Supabase instance and blocking profile registry. To fix this instantly, please open your <strong>Supabase Dashboard -> SQL Editor</strong>, run the entire contents of <code>schema.sql</code> or <code>rls.sql</code> to disable RLS, and allow multiplayer sandbox access.
+          </p>
+        </div>
+      </div>
+      <div class="flex gap-2 w-full md:w-auto">
+        <button onclick="copyRLSSql()" class="flex-grow md:flex-grow-0 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-4 py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 whitespace-nowrap">
+          <i class="fa-regular fa-copy"></i> Copy Bypass SQL
+        </button>
+        <button onclick="hidePersistentError()" class="bg-rose-950/40 hover:bg-rose-950/60 text-rose-300 font-bold px-3 py-2 rounded-xl text-xs transition-all" title="Dismiss">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main View Container -->
+  <main class="flex-grow flex flex-col relative">
+
+    <!-- 1. AUTH SCREEN -->
+    <section id="auth-screen" class="flex-grow flex items-center justify-center px-4 py-12">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full p-8 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 to-emerald-500"></div>
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold text-slate-900">Welcome to SMBG</h2>
+          <p class="text-slate-500 text-sm mt-1">Sign in to start trading and building your financial empire</p>
+        </div>
+
+        <form id="auth-form" class="space-y-4" onsubmit="handleAuthSubmit(event)">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Email
+              Address</label>
+            <div class="relative">
+              <i class="fa-regular fa-envelope absolute left-3 top-3.5 text-slate-400"></i>
+              <input type="email" id="auth-email" required placeholder="name@example.com"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Password</label>
+            <div class="relative">
+              <i class="fa-solid fa-lock absolute left-3 top-3.5 text-slate-400"></i>
+              <input type="password" id="auth-password" required placeholder="••••••••"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
+            </div>
+          </div>
+
+          <div id="auth-signup-fields" class="hidden space-y-4 pt-1 border-t border-slate-100 mt-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Username
+                (Display Name)</label>
+              <div class="relative">
+                <i class="fa-regular fa-user absolute left-3 top-3.5 text-slate-400"></i>
+                <input type="text" id="auth-username" placeholder="bull_rider"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-all">
+              </div>
+            </div>
+          </div>
+
+          <div id="auth-error-msg"
+            class="text-xs text-rose-500 bg-rose-50 border border-rose-100 px-3 py-2 rounded-lg hidden flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="auth-error-text">Authentication Error</span>
+          </div>
+
+          <button type="submit" id="auth-submit-btn"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all shadow-md shadow-blue-500/10">
+            Sign In
+          </button>
+        </form>
+
+        <div class="mt-6 text-center text-sm text-slate-500">
+          <span id="auth-switch-prompt">Don't have an account?</span>
+          <button onclick="toggleAuthMode()" id="auth-switch-btn"
+            class="text-blue-600 font-semibold hover:underline ml-1">Sign Up</button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 2. GAME SETUP & MAIN MENU SCREEN -->
+    <section id="menu-screen" class="hidden flex-grow flex items-center justify-center px-4 py-8">
+      <div class="max-w-4xl w-full grid md:grid-cols-5 gap-8">
+
+        <!-- Host Game Config Panel (3 Columns) -->
+        <div
+          class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 md:col-span-3 space-y-6 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-4">
+              <i class="fa-solid fa-crown text-amber-500 text-xl"></i>
+              <h3 class="text-xl font-bold text-slate-900">Host New Game Room</h3>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Stock
+                  Exchange</label>
+                <select id="config-exchange"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500">
+                  <option value="NSE" selected>NSE (India - Top 5)</option>
+                  <option value="NASDAQ">NASDAQ (USA Tech - Top 5)</option>
+                  <option value="NYSE">NYSE (USA Corporate - Top 5)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Total Main
+                  Rounds</label>
+                <select id="config-rounds"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500">
+                  <option value="3">3 Rounds</option>
+                  <option value="5" selected>5 Rounds (Recommended)</option>
+                  <option value="7">7 Rounds</option>
+                  <option value="10">10 Rounds</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Max Players in
+                  Room</label>
+                <select id="config-max-players"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500">
+                  <option value="2">2 Players</option>
+                  <option value="3">3 Players</option>
+                  <option value="4">4 Players</option>
+                  <option value="6" selected>6 Players</option>
+                  <option value="10">10 Players (Max Limit)</option>
+                </select>
+              </div>
+
+            </div>
+
+            <div class="border-t border-slate-100 my-5 pt-4">
+              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Advanced Configurations</h4>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-800">Short Selling</p>
+                    <p class="text-xs text-slate-400">Allow selling shares you do not own to cover later</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="config-toggle-short" class="sr-only peer" checked>
+                    <div
+                      class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                    </div>
+                  </label>
+                </div>
+
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-800">Loan & Mortgage (12% Interest)</p>
+                    <p class="text-xs text-slate-400">Allow leveraging assets. Forced settlement at round end</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="config-toggle-loan" class="sr-only peer" checked>
+                    <div
+                      class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                    </div>
+                  </label>
+                </div>
+
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-800">Chairman & CEO Officers</p>
+                    <p class="text-xs text-slate-400">Largest shareholders get card-discarding veto powers</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="config-toggle-officers" class="sr-only peer" checked>
+                    <div
+                      class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="handleCreateRoom()"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus"></i> Generate Game Room & Code
+          </button>
+        </div>
+
+        <!-- Join Game / Room Search Panel (2 Columns) -->
+        <div class="md:col-span-2 flex flex-col gap-6">
+          <div
+            class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 flex-grow flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center gap-2 mb-2">
+                <i class="fa-solid fa-right-to-bracket text-emerald-500 text-xl"></i>
+                <h3 class="text-xl font-bold text-slate-900">Join Existing Room</h3>
+              </div>
+              <p class="text-sm text-slate-500 leading-relaxed">Enter the 6-character room code shared by your host to
+                join their active session.</p>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Game Room
+                  Code</label>
+                <input type="text" id="join-room-code" placeholder="E.g., XF89D2" maxlength="6"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 font-mono text-center text-lg font-bold uppercase tracking-widest focus:outline-none focus:border-emerald-500 focus:bg-white transition-all">
+              </div>
+
+              <div id="join-error-msg"
+                class="text-xs text-rose-500 bg-rose-50 border border-rose-100 px-3 py-2 rounded-lg hidden flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span id="join-error-text">Invalid room code</span>
+              </div>
+            </div>
+
+            <button onclick="handleJoinRoom()"
+              class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2 mt-6">
+              <i class="fa-solid fa-door-open"></i> Join Active Room
+            </button>
+          </div>
+
+          <!-- Quick Tips Panel -->
+          <div
+            class="bg-gradient-to-tr from-smbgBlue-900 to-indigo-950 text-white rounded-2xl p-6 shadow-md border border-slate-800">
+            <h4 class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">How to Play Quick Guide</h4>
+            <ul class="text-xs text-slate-300 space-y-2.5">
+              <li><i class="fa-solid fa-circle-chevron-right text-emerald-400 mr-1.5"></i> Starting capital is
+                <strong>Rs. 1,000,000</strong> cash.
+              </li>
+              <li><i class="fa-solid fa-circle-chevron-right text-emerald-400 mr-1.5"></i> Banker deals <strong>10
+                  fluctuation hint cards</strong> to each.</li>
+              <li><i class="fa-solid fa-circle-chevron-right text-emerald-400 mr-1.5"></i> Max <strong>1 trade</strong>
+                (Buy/Sell) allowed per sub-round.</li>
+              <li><i class="fa-solid fa-circle-chevron-right text-emerald-400 mr-1.5"></i> After <strong>3
+                  sub-rounds</strong>, the main round price fluctuations are executed strictly according to active hint
+                cards!</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. GAME LOBBY (WAITING SCREEN) -->
+    <section id="lobby-screen" class="hidden flex-grow flex items-center justify-center px-4 py-8">
+      <div
+        class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-2xl w-full p-8 space-y-8 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 to-indigo-500"></div>
+
+        <div
+          class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-5 gap-4">
+          <div>
+            <h3 class="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+              Waiting Lobby
+              <span id="lobby-code-display"
+                class="bg-blue-50 text-blue-600 px-3 py-0.5 rounded-lg text-lg font-mono font-bold tracking-wider border border-blue-100 flex items-center gap-1.5">
+                CODE1
+                <button onclick="copyLobbyCode()" class="text-slate-400 hover:text-blue-600 text-sm" title="Copy Invite Link">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+              </span>
+            </h3>
+            <p class="text-slate-500 text-sm mt-1">Room Setup: <span id="lobby-exchange-display"
+                class="font-semibold text-slate-700">NSE</span> · <span id="lobby-rounds-display"
+                class="font-semibold text-slate-700">5 Rounds</span></p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-widest block mb-1">Room Count</span>
+            <span class="bg-slate-100 text-slate-700 font-bold px-3 py-1 rounded-full text-sm">
+              <i class="fa-solid fa-users mr-1.5 text-slate-500"></i><span id="lobby-player-count">1</span> / <span
+                id="lobby-player-max">10</span>
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Players Connected</h4>
+          <div id="lobby-players-list" class="space-y-3">
+            <!-- Player Entry Item -->
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-between items-center pt-5 border-t border-slate-100 gap-4">
+          <button id="lobby-ready-btn" onclick="toggleReadyStatus()"
+            class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-md shadow-indigo-500/10 flex items-center justify-center gap-2">
+            <i class="fa-regular fa-circle-check"></i> Toggle Ready Status
+          </button>
+
+          <button id="lobby-start-btn" onclick="handleStartGame()"
+            class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <i class="fa-solid fa-play"></i> Start Active Game
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. ACTIVE GAME SCREEN -->
+    <section id="game-screen"
+      class="hidden flex-grow grid grid-cols-1 lg:grid-cols-12 gap-5 px-4 py-4 max-w-[1600px] mx-auto w-full">
+
+      <!-- LEFT PANEL: MARKET MONITOR (4 Columns on Desktop, 2nd on Mobile) -->
+      <div class="lg:col-span-4 flex flex-col gap-4 order-2 lg:order-1">
+
+        <!-- Header Info Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+          <div class="flex justify-between items-center mb-3">
+            <div>
+              <span id="round-indicator"
+                class="bg-blue-50 text-blue-700 font-extrabold px-3 py-1 rounded-full text-xs uppercase tracking-wider">Round
+                1 / 5</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-semibold text-slate-400 uppercase">Sub Round:</span>
+              <div id="subround-dots" class="flex gap-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-200"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-200"></span>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-sm pt-2 border-t border-slate-100">
+            <span class="text-slate-500">Selected Market: <strong id="game-market-name"
+                class="text-slate-700">NSE</strong></span>
+            <span class="text-slate-500 font-semibold text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600"
+              id="game-room-code-tag">CODE: -</span>
+          </div>
+        </div>
+
+        <!-- Stock Market Watch -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 flex-grow p-4 flex flex-col">
+          <h3 class="font-bold text-slate-900 mb-3 flex justify-between items-center">
+            <span>📈 Live Stock Exchange</span>
+            <span class="text-xs font-normal text-slate-400">100k+ Shares = Chairman | 50k+ = CEO</span>
+          </h3>
+          <div id="market-list" class="space-y-2.5 overflow-y-auto flex-grow max-h-[360px] lg:max-h-[500px]">
+            <!-- Stock Company Item -->
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER PANEL: HINT DECK CARD CAROUSEL & PORTFOLIO (5 Columns on Desktop - CENTER STAGE, 1st on Mobile) -->
+      <div class="lg:col-span-5 flex flex-col gap-4 order-1 lg:order-2">
+
+        <!-- Private Fluctuation Dealt Hint Cards (10 Cards per Round) -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 flex flex-col flex-grow min-h-[300px] relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500"></div>
+          
+          <div class="flex justify-between items-center mb-3 mt-1">
+            <h3 class="font-bold text-slate-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-ticket text-indigo-500"></i> My Hint Cards
+            </h3>
+            <span class="bg-indigo-50 text-indigo-600 font-bold px-2.5 py-0.5 rounded-full text-xs border border-indigo-100 animate-pulse" id="hint-deck-count">0 /
+              10</span>
+          </div>
+
+          <div class="text-[10px] text-slate-400 leading-relaxed mb-3">
+            The database dealt you these 10 cards. They predict round-end stock fluctuation events! Keep them private.
+          </div>
+
+          <!-- Grid of Dealt Cards -->
+          <div class="flex-grow flex flex-col justify-between">
+            <div id="dealt-cards-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-y-auto max-h-[460px] pr-1">
+              <!-- Ticket Fluctuation Cards dynamically inserted here -->
+            </div>
+
+            <div id="empty-cards-state"
+              class="text-center py-10 text-slate-400 hidden flex-grow flex flex-col justify-center items-center">
+              <i class="fa-solid fa-hourglass-start text-3xl mb-2 text-slate-300"></i>
+              <p class="text-xs">Cards are dealt at the start of each main round.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Owned Portfolio Summary -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+          <h3 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-wallet text-blue-500"></i> My Portfolio Summary
+          </h3>
+          <div id="owned-portfolio-list" class="space-y-2 text-xs">
+            <!-- Dynamic portfolios list -->
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL: GAME HUB & ACTIVE PLAY PANEL (3 Columns on Desktop, 3rd on Mobile) -->
+      <div class="lg:col-span-3 flex flex-col gap-4 order-3 lg:order-3">
+
+        <!-- Active Turn Banner -->
+        <div
+          class="bg-gradient-to-tr from-smbgBlue-900 to-indigo-950 text-white rounded-xl p-4 shadow-sm relative overflow-hidden">
+          <div class="absolute top-[-10px] right-[-10px] opacity-10 text-white text-8xl pointer-events-none">
+            <i class="fa-solid fa-arrows-spin"></i>
+          </div>
+          <div class="relative z-10 flex justify-between items-center">
+            <div>
+              <p class="text-xs text-blue-400 font-semibold uppercase tracking-wider mb-1">Active Trading Player</p>
+              <h4 id="active-player-name" class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-regular fa-user text-emerald-400"></i> Player Username
+              </h4>
+            </div>
+            <div id="active-player-role-badges" class="flex gap-1">
+              <!-- Officer Badges -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Financial Balance Sheet & Bank -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-4">
+          <h3 class="font-bold text-slate-900 flex justify-between items-center">
+            <span>💼 Financial Balance Sheet & Bank</span>
+            <span id="trade-limit-warning"
+              class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">Max 1 trade per
+              Sub-Round</span>
+          </h3>
+
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 grid grid-cols-3 gap-4 lg:grid-cols-1">
+            <div>
+              <span class="text-xs text-slate-400 block mb-0.5">Available Cash</span>
+              <strong id="desk-cash" class="text-slate-800 text-base sm:text-lg">Rs. 1,000,000</strong>
+            </div>
+            <div>
+              <span class="text-xs text-slate-400 block mb-0.5">Stock Portfolio</span>
+              <strong id="desk-portfolio-value" class="text-slate-800 text-base sm:text-lg">Rs. 0</strong>
+            </div>
+            <div
+              class="col-span-1 border-t sm:border-t-0 lg:border-t lg:pl-0 pt-2 sm:pt-0 lg:pt-2 border-slate-200">
+              <span class="text-xs text-slate-400 block mb-0.5">Outstanding Loan</span>
+              <strong id="desk-loans-due" class="text-rose-600 text-base sm:text-lg">Rs. 0</strong>
+            </div>
+          </div>
+
+          <!-- Quick Banking Panel -->
+          <div id="panel-loans" class="border-t border-slate-100 pt-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Bank Credit Operations</span>
+              <span class="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-semibold">12% Interest
+                Rate</span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2.5">
+              <button onclick="handleTakeLoan()" id="btn-loan"
+                class="flex-grow bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-hand-holding-dollar"></i> Borrow Rs. 5 Lakh
+              </button>
+            </div>
+          </div>
+
+          <!-- Skip / Pass Button -->
+          <button onclick="executePass()" id="btn-pass-turn"
+            class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-lg text-xs sm:text-sm transition-all border border-slate-200 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-forward"></i> Pass Turn / No Trade in Sub-Round
+          </button>
+        </div>
+
+        <!-- Room Turn Tracker -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+          <h3 class="font-bold text-slate-900 mb-2.5 flex justify-between items-center text-sm">
+            <span>👥 Room Turn Registry</span>
+            <span class="text-xs font-normal text-slate-400">Turn rotation</span>
+          </h3>
+          <div id="room-turn-registry" class="space-y-1.5 max-h-[160px] overflow-y-auto">
+            <!-- Dynamic Turn Item status -->
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================================================================
+       📊 MODALS, DIALOGS, & CORNER NOTIFICATIONS
+       ============================================================================ -->
+
+  <!-- Notification Toast -->
+  <div id="toast-notif"
+    class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 z-50 transform translate-y-20 opacity-0 transition-all duration-300 border border-slate-800">
+    <div id="toast-icon" class="text-emerald-400"><i class="fa-solid fa-circle-check text-lg"></i></div>
+    <div class="text-xs">
+      <h5 id="toast-title" class="font-bold">Transaction Successful</h5>
+      <p id="toast-message" class="text-slate-400 mt-0.5">Data saved directly to Supabase.</p>
+    </div>
+  </div>
+
+  <!-- Loan & Mortgage Settlement / Round End Modal -->
+  <div id="round-settlement-modal"
+    class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
+    <div
+      class="bg-white rounded-2xl border border-slate-100 max-w-2xl w-full p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="absolute top-0 left-0 w-full h-2 bg-amber-500"></div>
+
+      <div class="flex items-center gap-3 mb-4">
+        <i class="fa-solid fa-building-columns text-amber-500 text-2xl"></i>
+        <div>
+          <h3 class="text-xl font-bold text-slate-900">Main Round Finished: Fluctuation & Debt Settlement</h3>
+          <p class="text-xs text-slate-400">End of Round Processing System</p>
+        </div>
+      </div>
+
+      <div class="space-y-4 overflow-y-auto flex-grow my-4 pr-1">
+        <!-- 1. Stocks Fluctuation Reports -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Live Stock Price Fluctuation
+            Summary</h4>
+          <div id="fluctuation-summary-list" class="space-y-2.5">
+            <!-- List of stock changes and their triggering hint cards -->
+          </div>
+        </div>
+
+        <!-- 2. Loan Liabilities / Auto-liquidation warnings -->
+        <div id="settlement-loan-section" class="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-amber-800 uppercase tracking-widest">My Loan & Mortgage Accounts</h4>
+            <span class="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 rounded font-bold">12% Interest
+              rate</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <span class="text-slate-500 block mb-0.5">Outstanding Bank Loan:</span>
+              <strong id="settlement-loan-amount" class="text-slate-800 font-bold text-sm">Rs. 0</strong>
+            </div>
+            <div>
+              <span class="text-slate-500 block mb-0.5">Mortgaged Shares locked:</span>
+              <strong id="settlement-mortgage-count" class="text-slate-800 font-bold text-sm">0 Shares</strong>
+            </div>
+          </div>
+
+          <div
+            class="text-[11px] text-amber-700/80 leading-relaxed bg-amber-100/30 p-2.5 rounded border border-amber-100/50">
+            <strong>⚠️ Bank Repayment Deadline:</strong> Debt must be repaid now. If you fail to repay or click "Decline
+            Settlement", the banker will automatically liquidate (sell off) your mortgaged assets at the <strong>newly
+              fluctuated prices</strong> to settle the loan + 12% interest.
+          </div>
+
+          <div class="flex gap-2">
+            <button onclick="settleAllDebts()"
+              class="flex-grow bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-lg text-xs transition-all shadow-sm">
+              Repay All Debts & Redeem Collateral
+            </button>
+            <button onclick="closeSettlementModal(true)"
+              class="flex-grow border border-amber-600 hover:bg-amber-50 text-amber-700 font-semibold py-2.5 rounded-lg text-xs transition-all">
+              Liquidate Collateral / Skip
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-4 border-t border-slate-100">
+        <button id="btn-complete-settlement" onclick="closeSettlementModal(false)"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm transition-all shadow-md">
+          Advance to Next Main Round <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Premium Interactive Trading Modal -->
+  <div id="trading-popup-modal"
+    class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
+    <div
+      class="bg-white rounded-2xl border border-slate-100 max-w-md w-full p-6 shadow-2xl relative overflow-hidden flex flex-col transition-all transform scale-100 duration-300">
+      <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 to-blue-500"></div>
+
+      <!-- Close top-right button -->
+      <button onclick="closeTradingModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-all">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="flex items-center gap-3.5 mb-4">
+        <div class="bg-blue-50 text-blue-600 p-3 rounded-xl shadow-inner">
+          <i class="fa-solid fa-chart-line text-xl text-emerald-500"></i>
+        </div>
+        <div>
+          <h3 id="trading-modal-co-symbol" class="text-lg font-black text-slate-950 uppercase tracking-wide">AAPL</h3>
+          <p id="trading-modal-co-name" class="text-xs text-slate-400 font-semibold truncate max-w-[200px]">Apple Inc.</p>
+        </div>
+        <div class="ml-auto text-right">
+          <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Live Price</span>
+          <strong id="trading-modal-live-price" class="text-base font-black text-emerald-600">Rs. 180</strong>
+        </div>
+      </div>
+
+      <!-- Portfolio Summary Cards Inside Modal -->
+      <div class="grid grid-cols-2 gap-3 mb-4 text-xs">
+        <div class="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+          <span class="text-slate-500 block font-semibold mb-0.5">Your Cash Available</span>
+          <strong id="trading-modal-cash" class="text-slate-800 text-sm font-bold">Rs. 500,000</strong>
+        </div>
+        <div class="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+          <span class="text-slate-500 block font-semibold mb-0.5">Your Position</span>
+          <strong id="trading-modal-position" class="text-slate-800 text-sm font-bold">0 Shares</strong>
+        </div>
+      </div>
+
+      <!-- Quantity Selector Block -->
+      <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-4">
+        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 text-center">Set Quantity to Trade</label>
+        
+        <div class="flex items-center justify-between gap-3 max-w-[280px] mx-auto mb-3">
+          <button onclick="adjustModalQuantity(-10000)" class="w-10 h-10 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition flex items-center justify-center text-sm shadow-sm" title="Subtract 10k shares">
+            -10k
+          </button>
+          <button onclick="adjustModalQuantity(-1000)" class="w-8 h-8 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition flex items-center justify-center text-xs shadow-sm" title="Subtract 1k shares">
+            -1k
+          </button>
+          
+          <input type="number" id="trading-modal-qty" value="10000" min="1000" step="1000" oninput="updateTradingModalEstimation()"
+            class="w-24 text-center font-extrabold text-lg text-slate-900 border-b-2 border-slate-200 focus:border-blue-500 bg-transparent outline-none py-1">
+          
+          <button onclick="adjustModalQuantity(1000)" class="w-8 h-8 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition flex items-center justify-center text-xs shadow-sm" title="Add 1k shares">
+            +1k
+          </button>
+          <button onclick="adjustModalQuantity(10000)" class="w-10 h-10 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition flex items-center justify-center text-sm shadow-sm" title="Add 10k shares">
+            +10k
+          </button>
+        </div>
+
+        <!-- Quick Increments Pills -->
+        <div class="flex justify-center gap-1.5 flex-wrap">
+          <button onclick="setPresetQuantity('1000')" class="px-2.5 py-1 text-[10px] bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded-md font-bold text-slate-600 transition shadow-xs">
+            1k
+          </button>
+          <button onclick="setPresetQuantity('10000')" class="px-2.5 py-1 text-[10px] bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded-md font-bold text-slate-600 transition shadow-xs">
+            10k
+          </button>
+          <button onclick="setPresetQuantity('50000')" class="px-2.5 py-1 text-[10px] bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded-md font-bold text-slate-600 transition shadow-xs">
+            50k
+          </button>
+          <button onclick="setPresetQuantity('100000')" class="px-2.5 py-1 text-[10px] bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-100 rounded-md font-bold text-slate-600 transition shadow-xs">
+            100k
+          </button>
+          <button onclick="setPresetQuantity('MAX_BUY')" class="px-2.5 py-1 text-[10px] bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-md font-bold text-emerald-700 transition shadow-xs">
+            Max Buy
+          </button>
+          <button onclick="setPresetQuantity('MAX_SELL')" class="px-2.5 py-1 text-[10px] bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-md font-bold text-rose-700 transition shadow-xs">
+            Max Sell
+          </button>
+        </div>
+      </div>
+
+      <!-- Estimator Box -->
+      <div id="trading-modal-estimation-box" class="bg-blue-50/50 border border-blue-100/50 rounded-xl p-3 mb-4 text-center text-xs">
+        <span class="text-slate-400 block font-semibold mb-0.5">Est. Transaction Value</span>
+        <strong id="trading-modal-est-value" class="text-blue-900 text-base font-black">Rs. 1,800,000</strong>
+        <div id="trading-modal-est-status" class="text-[10px] text-slate-500 mt-1 font-semibold"></div>
+      </div>
+
+      <!-- Action Panel Buttons -->
+      <div class="space-y-2">
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-modal-action-buy" onclick="handleModalTrade('BUY')"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 text-xs sm:text-sm">
+            <i class="fa-solid fa-cart-shopping"></i> Buy Shares
+          </button>
+          <button id="btn-modal-action-sell" onclick="handleModalTrade('SELL')"
+            class="bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 text-xs sm:text-sm">
+            <i class="fa-solid fa-tags"></i> Sell Shares
+          </button>
+        </div>
+        
+        <!-- Short Selling actions (hidden conditionally) -->
+        <div id="modal-short-sell-actions" class="grid grid-cols-2 gap-2 hidden">
+          <button id="btn-modal-action-short" onclick="handleModalTrade('SHORT_SELL')"
+            class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-2.5 px-4 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 text-xs">
+            <i class="fa-solid fa-arrow-down-long"></i> Short Sell
+          </button>
+          <button id="btn-modal-action-cover" onclick="handleModalTrade('SHORT_COVER')"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2.5 px-4 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 text-xs">
+            <i class="fa-solid fa-shield-halved"></i> Cover Short
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Final Leaderboard Modal -->
+  <div id="game-over-modal"
+    class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center px-4 hidden">
+    <div
+      class="bg-white rounded-2xl border border-slate-100 max-w-xl w-full p-8 shadow-2xl relative overflow-hidden text-center space-y-6">
+      <div class="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400"></div>
+
+      <div class="inline-flex bg-amber-50 text-amber-500 p-4 rounded-full shadow-inner animate-bounce">
+        <i class="fa-solid fa-trophy text-4xl"></i>
+      </div>
+
+      <div>
+        <h3 class="text-2xl font-extrabold text-slate-900">Game Over: Final Worth Standings</h3>
+        <p class="text-sm text-slate-500">The Stock Exchange is closed. Banker calculations final.</p>
+      </div>
+
+      <div id="leaderboard-standings" class="space-y-2.5 py-4 max-h-[300px] overflow-y-auto">
+        <!-- Rank entries -->
+      </div>
+
+      <div class="pt-4 border-t border-slate-100 flex gap-3">
+        <button onclick="exitToMainMenu()"
+          class="flex-grow bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm transition-all shadow-md">
+          Return to Main Menu
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Info -->
+  <footer class="bg-white border-t border-slate-100 py-4 px-8 text-center text-xs text-slate-400 mt-auto">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <p>© 2026 Stock Market Board Game (SMBG). Optimized for all mobile and desktop browsers.</p>
+      <div class="flex items-center gap-3">
+        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Live
+          Synced</span>
+        <span class="text-slate-300">|</span>
+        <span class="font-mono">Supabase Realtime API v2</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================================================
+       🧠 CORE SMBG DATABASE WRAPPER & STATE ENGINE
+       ============================================================================ -->
+  <script src="app.js"></script>
+</body>
+
+</html>
