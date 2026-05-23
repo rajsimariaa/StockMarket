@@ -1,0 +1,37 @@
+{
+  "name": "Stock Market Board Game (SMBG) Pro",
+  "short_name": "SMBG Pro",
+  "description": "Multiplayer financial strategy board game based on real-time price fluctuations and private hint cards.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "categories": ["games", "finance"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

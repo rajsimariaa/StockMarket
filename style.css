@@ -59,3 +59,24 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Custom Turn Alert Animations */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.shake-effect {
+  animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4), inset 0 0 15px rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 35px rgba(16, 185, 129, 0.8), inset 0 0 35px rgba(16, 185, 129, 0.8); }
+}
+
+.neon-turn-glow {
+  animation: neon-pulse 1.8s infinite ease-in-out;
+  border-color: #10b981 !important;
+}

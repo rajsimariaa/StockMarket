@@ -5,6 +5,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🏆 Stock Market Board Game (SMBG)</title>
+  
+  <!-- PWA Meta Elements & Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SMBG Pro">
+  <link rel="apple-touch-icon" href="icon_512.png">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  
   <!-- Google Fonts: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,6 +61,25 @@
 </head>
 
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- Premium In-App Turn Alert Banner -->
+  <div id="turn-alert-banner"
+    class="fixed top-0 left-0 w-full z-50 transform -translate-y-full opacity-0 pointer-events-none transition-all duration-500 ease-out flex justify-center items-center p-4">
+    <div class="bg-slate-900 text-white rounded-2xl border-2 border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.3)] max-w-md w-full px-6 py-5 flex items-center gap-4 pointer-events-auto relative overflow-hidden">
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500"></div>
+      <div class="bg-emerald-500/10 text-emerald-400 p-3 rounded-full border border-emerald-500/20 animate-bounce">
+        <i class="fa-solid fa-bell-concierge text-2xl"></i>
+      </div>
+      <div class="flex-grow">
+        <span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">It's Your Turn!</span>
+        <h4 class="font-extrabold text-base text-slate-100 mt-1 leading-tight">Time to make a move!</h4>
+        <p class="text-xs text-slate-400 mt-0.5">Vibration triggered. Act before other players veto your assets.</p>
+      </div>
+      <button onclick="dismissTurnAlert()" class="text-slate-400 hover:text-white transition-colors p-1" title="Dismiss Alert">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+  </div>
 
   <!-- ============================================================================
        🔑 SUPABASE PROJECT CONFIGURATION
@@ -927,7 +957,7 @@
   <!-- Footer Info -->
   <footer class="bg-white border-t border-slate-100 py-4 px-8 text-center text-xs text-slate-400 mt-auto">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-      <p>© 2026 Stock Market Board Game (SMBG). Optimized for all mobile and desktop browsers.</p>
+      <p>© 2026 Stock Market Board Game (SMBG). Optimized for all mobile and desktop browsers. <span class="mx-1.5 text-slate-300">|</span> Made by <a href="https://rajsimaria.vercel.app" target="_blank" class="hover:text-blue-600 font-semibold transition-colors">Raj Simaria</a></p>
       <div class="flex items-center gap-3">
         <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Live
           Synced</span>
@@ -941,6 +971,21 @@
        🧠 CORE SMBG DATABASE WRAPPER & STATE ENGINE
        ============================================================================ -->
   <script src="app.js"></script>
+  
+  <!-- Register PWA Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((registration) => {
+            console.log('SMBG Service Worker registered successfully with scope:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('SMBG Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
 </body>
 
 </html>

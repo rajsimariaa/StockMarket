@@ -951,6 +951,95 @@ function safeSetHtml(id, html) {
   if (el) el.innerHTML = html;
 }
 
+// ==========================================================
+// 8B. CUSTOM NON-TRADITIONAL TURN NOTIFICATION SYSTEM
+// ==========================================================
+let titleFlashInterval = null;
+function startTitleFlashing() {
+  if (titleFlashInterval) clearInterval(titleFlashInterval);
+  const originalTitle = "🏆 Stock Market Board Game (SMBG)";
+  let isAlert = false;
+  titleFlashInterval = setInterval(() => {
+    document.title = isAlert ? "🔔 YOUR TURN - SMBG PRO!" : originalTitle;
+    isAlert = !isAlert;
+  }, 1000);
+
+  // Stop flashing when user clicks anywhere on the document or presses any key
+  const stopFlashing = () => {
+    clearInterval(titleFlashInterval);
+    titleFlashInterval = null;
+    document.title = originalTitle;
+    document.removeEventListener('mousedown', stopFlashing);
+    document.removeEventListener('keydown', stopFlashing);
+  };
+  document.addEventListener('mousedown', stopFlashing);
+  document.addEventListener('keydown', stopFlashing);
+}
+
+function triggerVisualTurnAlert() {
+  // 1. Flash document title for background tabs/windows
+  startTitleFlashing();
+
+  // 2. Add shake effect to game screen to catch attention physically
+  const gameBoard = document.getElementById("game-screen");
+  if (gameBoard) {
+    gameBoard.classList.remove("shake-effect");
+    void gameBoard.offsetWidth; // Trigger reflow to restart CSS animation
+    gameBoard.classList.add("shake-effect");
+    setTimeout(() => {
+      gameBoard.classList.remove("shake-effect");
+    }, 1000);
+  }
+
+  // 3. Slide down premium turn alert banner
+  const banner = document.getElementById("turn-alert-banner");
+  if (banner) {
+    banner.classList.remove("-translate-y-full", "opacity-0", "pointer-events-none");
+    banner.classList.add("translate-y-0", "opacity-100");
+  }
+
+  // 4. Highlight turn card
+  const turnContainer = document.getElementById("active-player-name")?.closest('.bg-gradient-to-tr');
+  if (turnContainer) {
+    turnContainer.classList.add("neon-turn-glow");
+  }
+}
+
+function dismissTurnAlert() {
+  // 1. Clear title flashing
+  if (titleFlashInterval) {
+    clearInterval(titleFlashInterval);
+    titleFlashInterval = null;
+    document.title = "🏆 Stock Market Board Game (SMBG)";
+  }
+
+  // 2. Hide banner
+  const banner = document.getElementById("turn-alert-banner");
+  if (banner) {
+    banner.classList.remove("translate-y-0", "opacity-100");
+    banner.classList.add("-translate-y-full", "opacity-0", "pointer-events-none");
+  }
+
+  // 3. Remove glow
+  const turnContainer = document.getElementById("active-player-name")?.closest('.bg-gradient-to-tr');
+  if (turnContainer) {
+    turnContainer.classList.remove("neon-turn-glow");
+  }
+}
+
+function triggerTurnNotification() {
+  const isMyTurn = gameState.me && gameState.room && gameState.me.id === gameState.room.current_turn_player_id;
+  if (!isMyTurn) return;
+
+  // 1. Mobile Vibration API (vibrate 200ms, pause 100ms, vibrate 200ms)
+  if ('vibrate' in navigator) {
+    navigator.vibrate([200, 100, 200]);
+  }
+
+  // 2. Desktop/Laptop custom visual and title alert
+  triggerVisualTurnAlert();
+}
+
 async function refreshActiveGameUI() {
   // Guard check to make sure gameState.me and gameState.room are fully populated
   if (!gameState.me || !gameState.room) {
@@ -1169,6 +1258,18 @@ async function refreshActiveGameUI() {
 
   // Render Portfolio Summary
   renderPortfolioSummary(myPortfolioVal);
+
+  // 7. Check and trigger active player turn notifications
+  const isMyTurn = gameState.me && gameState.room && gameState.me.id === gameState.room.current_turn_player_id;
+  if (isMyTurn) {
+    const turnKey = `${gameState.room.id}:${gameState.room.current_round}:${gameState.room.current_sub_round}:${gameState.room.current_turn_player_id}`;
+    if (window.lastNotifiedTurnKey !== turnKey) {
+      window.lastNotifiedTurnKey = turnKey;
+      triggerTurnNotification();
+    }
+  } else {
+    dismissTurnAlert();
+  }
 }
 
 // ==========================================================
